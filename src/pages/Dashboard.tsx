@@ -6,10 +6,18 @@ import { supabase } from '@/integrations/supabase/client';
 import MemoryCard, { type MemoryNote } from '@/components/MemoryCard';
 import EditMemoryDialog from '@/components/EditMemoryDialog';
 import { Brain, Search, Bell, Mic, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { isAfter, isBefore, addDays, format } from 'date-fns';
+import ThemeToggle from '@/components/ThemeToggle';
+
+const categoryEmoji: Record<string, string> = {
+  personal: '🏠',
+  work: '💼',
+  finance: '💰',
+  health: '❤️',
+  other: '📝',
+};
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -20,6 +28,7 @@ const Dashboard: React.FC = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [semanticResults, setSemanticResults] = useState<MemoryNote[] | null>(null);
   const [searching, setSearching] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
 
   const { data: notes = [], isLoading } = useQuery({
     queryKey: ['memory-notes'],
@@ -45,10 +54,7 @@ const Dashboard: React.FC = () => {
   });
 
   const doSemanticSearch = useCallback(async (query: string) => {
-    if (!query.trim() || !user) {
-      setSemanticResults(null);
-      return;
-    }
+    if (!query.trim() || !user) { setSemanticResults(null); return; }
     setSearching(true);
     try {
       const { data, error } = await supabase.functions.invoke('semantic-search', {
@@ -57,14 +63,12 @@ const Dashboard: React.FC = () => {
       if (error) throw error;
       setSemanticResults(data.results || []);
     } catch {
-      // Fallback to text search
       setSemanticResults(null);
     } finally {
       setSearching(false);
     }
   }, [user]);
 
-  // Debounced semantic search
   const searchTimerRef = React.useRef<NodeJS.Timeout>();
   const handleSearchChange = (value: string) => {
     setSearch(value);
@@ -76,16 +80,17 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  // Show semantic results if available, otherwise text filter
-  const displayNotes = semanticResults !== null
+  const categories = [...new Set(notes.map((n) => n.category || 'other'))];
+
+  let displayNotes = semanticResults !== null
     ? semanticResults
     : search
-      ? notes.filter(
-          (n) =>
-            n.title.toLowerCase().includes(search.toLowerCase()) ||
-            n.content.toLowerCase().includes(search.toLowerCase())
-        )
+      ? notes.filter((n) => n.title.toLowerCase().includes(search.toLowerCase()) || n.content.toLowerCase().includes(search.toLowerCase()))
       : notes;
+
+  if (categoryFilter) {
+    displayNotes = displayNotes.filter((n) => (n.category || 'other') === categoryFilter);
+  }
 
   const upcomingReminders = notes.filter(
     (n) => n.reminder_date && isAfter(new Date(n.reminder_date), new Date()) && isBefore(new Date(n.reminder_date), addDays(new Date(), 7))
@@ -100,22 +105,23 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">
-          Hey, {firstName} 👋
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          You have {notes.length} memories & {upcomingReminders.length} upcoming reminders
-        </p>
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">
+            Hey, {firstName} 👋
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            You have {notes.length} memories & {upcomingReminders.length} upcoming reminders
+          </p>
+        </div>
+        {/* Mobile theme toggle */}
+        <div className="lg:hidden">
+          <ThemeToggle />
+        </div>
       </motion.div>
 
       {upcomingReminders.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="glass-card-elevated p-4 sm:p-5"
-        >
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card-elevated p-4 sm:p-5">
           <div className="flex items-center gap-2 mb-3">
             <Bell className="w-4 h-4 text-primary" />
             <h2 className="font-display font-semibold text-foreground text-sm">Upcoming Reminders</h2>
@@ -124,21 +130,40 @@ const Dashboard: React.FC = () => {
             {upcomingReminders.slice(0, 5).map((r) => (
               <div key={r.id} className="shrink-0 bg-accent/50 rounded-xl px-4 py-3 min-w-[180px]">
                 <p className="text-sm font-medium text-foreground truncate">{r.title}</p>
-                <p className="text-xs text-primary font-medium mt-1">
-                  {format(new Date(r.reminder_date!), 'EEE, MMM d')}
-                </p>
+                <p className="text-xs text-primary font-medium mt-1">{format(new Date(r.reminder_date!), 'EEE, MMM d')}</p>
               </div>
             ))}
           </div>
         </motion.div>
       )}
 
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-        className="flex items-center gap-3"
-      >
+      {/* Category filter chips */}
+      {categories.length > 1 && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+          <button
+            onClick={() => setCategoryFilter(null)}
+            className={`shrink-0 px-3.5 py-1.5 rounded-2xl text-xs font-semibold transition-all border ${
+              categoryFilter === null ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary/50 text-muted-foreground border-border/50 hover:bg-secondary'
+            }`}
+          >
+            All
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(categoryFilter === cat ? null : cat)}
+              className={`shrink-0 px-3.5 py-1.5 rounded-2xl text-xs font-semibold transition-all border flex items-center gap-1.5 ${
+                categoryFilter === cat ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary/50 text-muted-foreground border-border/50 hover:bg-secondary'
+              }`}
+            >
+              <span>{categoryEmoji[cat] || '📝'}</span>
+              {cat}
+            </button>
+          ))}
+        </motion.div>
+      )}
+
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="flex items-center gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -147,13 +172,11 @@ const Dashboard: React.FC = () => {
             onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-10 h-11 rounded-xl bg-secondary/50 border-border/50"
           />
-          {searching && (
-            <Sparkles className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary animate-pulse" />
-          )}
+          {searching && <Sparkles className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary animate-pulse" />}
         </div>
         <p className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
           <Mic className="w-3 h-3" />
-          Use the mic button to add
+          Use the mic button
         </p>
       </motion.div>
 
@@ -177,23 +200,17 @@ const Dashboard: React.FC = () => {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
           <Brain className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
           <h3 className="font-display font-semibold text-foreground text-lg">
-            {search ? 'No matching memories' : 'No memories yet'}
+            {search || categoryFilter ? 'No matching memories' : 'No memories yet'}
           </h3>
           <p className="text-muted-foreground mt-1 text-sm">
-            {search ? 'Try rephrasing your search' : 'Tap the 🎤 button to create your first memory with AI'}
+            {search || categoryFilter ? 'Try a different filter or search' : 'Tap the 🎤 button to create your first memory with AI'}
           </p>
         </motion.div>
       ) : (
         <div className="space-y-3">
           <AnimatePresence>
             {displayNotes.map((note, i) => (
-              <MemoryCard
-                key={note.id}
-                note={note}
-                index={i}
-                onDelete={(id) => deleteMutation.mutate(id)}
-                onEdit={handleEdit}
-              />
+              <MemoryCard key={note.id} note={note} index={i} onDelete={(id) => deleteMutation.mutate(id)} onEdit={handleEdit} />
             ))}
           </AnimatePresence>
         </div>

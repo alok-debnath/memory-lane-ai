@@ -1,12 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Home, Bell, User, Brain, LogOut } from 'lucide-react';
+import { Home, Bell, User, Brain, LogOut, Clock } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const navItems = [
   { path: '/', icon: Home, label: 'Dashboard' },
+  { path: '/timeline', icon: Clock, label: 'Timeline' },
   { path: '/reminders', icon: Bell, label: 'Reminders' },
   { path: '/profile', icon: User, label: 'Profile' },
 ];
@@ -18,11 +20,14 @@ const DesktopSidebar: React.FC = () => {
 
   return (
     <aside className="hidden lg:flex flex-col w-64 h-screen bg-card/50 backdrop-blur-xl border-r border-border/50 p-6 fixed left-0 top-0">
-      <div className="flex items-center gap-3 mb-10">
-        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-          <Brain className="w-5 h-5 text-primary-foreground" />
+      <div className="flex items-center justify-between mb-10">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+            <Brain className="w-5 h-5 text-primary-foreground" />
+          </div>
+          <span className="font-display text-xl font-bold text-foreground">Memora</span>
         </div>
-        <span className="font-display text-xl font-bold text-foreground">Memora</span>
+        <ThemeToggle />
       </div>
 
       <nav className="flex-1 space-y-1">
