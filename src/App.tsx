@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
-import Record from "./pages/Record";
 import Reminders from "./pages/Reminders";
 import Profile from "./pages/Profile";
 import AppLayout from "./components/AppLayout";
