@@ -10,7 +10,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { query, userId } = await req.json();
+    const { query, userId, mode = "hybrid" } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -18,37 +18,73 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Generate embedding for the search query
-    const embResponse = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "text-embedding-3-small",
-        input: query,
-        dimensions: 768,
-      }),
-    });
+    // Run keyword search and semantic search in parallel
+    const keywordPromise = supabase
+      .from("memory_notes")
+      .select("id, title, content, category, reminder_date, is_recurring, recurrence_type, created_at, updated_at, user_id")
+      .eq("user_id", userId)
+      .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
+      .order("created_at", { ascending: false })
+      .limit(20);
 
-    if (!embResponse.ok) throw new Error("Embedding generation failed");
+    const semanticPromise = (async () => {
+      try {
+        const embResponse = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "text-embedding-3-small",
+            input: query,
+            dimensions: 768,
+          }),
+        });
 
-    const embData = await embResponse.json();
-    const queryEmbedding = embData.data?.[0]?.embedding;
-    if (!queryEmbedding) throw new Error("No embedding returned");
+        if (!embResponse.ok) return [];
 
-    // Perform semantic search
-    const { data: results, error } = await supabase.rpc("match_memories", {
-      query_embedding: queryEmbedding,
-      match_threshold: 0.3,
-      match_count: 20,
-      p_user_id: userId,
-    });
+        const embData = await embResponse.json();
+        const queryEmbedding = embData.data?.[0]?.embedding;
+        if (!queryEmbedding) return [];
 
-    if (error) throw error;
+        const { data: results } = await supabase.rpc("match_memories", {
+          query_embedding: queryEmbedding,
+          match_threshold: 0.25,
+          match_count: 20,
+          p_user_id: userId,
+        });
 
-    return new Response(JSON.stringify({ results: results || [] }), {
+        return (results || []).map((r: Record<string, unknown>) => ({ ...r, _similarity: r.similarity }));
+      } catch {
+        return [];
+      }
+    })();
+
+    const [keywordResult, semanticResults] = await Promise.all([keywordPromise, semanticPromise]);
+    const keywordResults = (keywordResult.data || []).map((r: Record<string, unknown>) => ({ ...r, _similarity: 0 }));
+
+    // Merge and deduplicate: semantic results ranked higher
+    const seen = new Set<string>();
+    const merged: Record<string, unknown>[] = [];
+
+    // Semantic results first (already ranked by similarity)
+    for (const item of semanticResults) {
+      if (!seen.has(item.id as string)) {
+        seen.add(item.id as string);
+        merged.push(item);
+      }
+    }
+
+    // Then keyword results that weren't in semantic
+    for (const item of keywordResults) {
+      if (!seen.has(item.id as string)) {
+        seen.add(item.id as string);
+        merged.push(item);
+      }
+    }
+
+    return new Response(JSON.stringify({ results: merged }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

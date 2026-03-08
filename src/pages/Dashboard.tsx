@@ -53,28 +53,34 @@ const Dashboard: React.FC = () => {
     },
   });
 
-  const doSemanticSearch = useCallback(async (query: string) => {
+  const doSearch = useCallback(async (query: string) => {
     if (!query.trim() || !user) { setSemanticResults(null); return; }
     setSearching(true);
     try {
       const { data, error } = await supabase.functions.invoke('semantic-search', {
-        body: { query, userId: user.id },
+        body: { query, userId: user.id, mode: 'hybrid' },
       });
       if (error) throw error;
       setSemanticResults(data.results || []);
     } catch {
-      setSemanticResults(null);
+      // Fallback to local keyword search
+      setSemanticResults(
+        notes.filter((n) =>
+          n.title.toLowerCase().includes(query.toLowerCase()) ||
+          n.content.toLowerCase().includes(query.toLowerCase())
+        )
+      );
     } finally {
       setSearching(false);
     }
-  }, [user]);
+  }, [user, notes]);
 
   const searchTimerRef = React.useRef<NodeJS.Timeout>();
   const handleSearchChange = (value: string) => {
     setSearch(value);
     clearTimeout(searchTimerRef.current);
-    if (value.trim().length >= 3) {
-      searchTimerRef.current = setTimeout(() => doSemanticSearch(value), 500);
+    if (value.trim().length >= 2) {
+      searchTimerRef.current = setTimeout(() => doSearch(value), 400);
     } else {
       setSemanticResults(null);
     }
@@ -82,11 +88,7 @@ const Dashboard: React.FC = () => {
 
   const categories = [...new Set(notes.map((n) => n.category || 'other'))];
 
-  let displayNotes = semanticResults !== null
-    ? semanticResults
-    : search
-      ? notes.filter((n) => n.title.toLowerCase().includes(search.toLowerCase()) || n.content.toLowerCase().includes(search.toLowerCase()))
-      : notes;
+  let displayNotes = semanticResults !== null ? semanticResults : notes;
 
   if (categoryFilter) {
     displayNotes = displayNotes.filter((n) => (n.category || 'other') === categoryFilter);

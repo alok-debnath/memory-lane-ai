@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { type MemoryNote } from '@/components/MemoryCard';
 import EditMemoryDialog from '@/components/EditMemoryDialog';
-import { Clock, Bell, Brain, ChevronRight } from 'lucide-react';
+import { Clock, Bell, Brain, ChevronRight, Search, Sparkles } from 'lucide-react';
 import { format, isToday, isYesterday, isThisWeek, isThisMonth } from 'date-fns';
+import { Input } from '@/components/ui/input';
+import { useAuth } from '@/contexts/AuthContext';
 
 const categoryEmoji: Record<string, string> = {
   personal: '🏠',
@@ -16,9 +18,13 @@ const categoryEmoji: Record<string, string> = {
 };
 
 const Timeline: React.FC = () => {
+  const { user } = useAuth();
   const [editNote, setEditNote] = useState<MemoryNote | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [filter, setFilter] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<MemoryNote[] | null>(null);
+  const [searching, setSearching] = useState(false);
 
   const { data: notes = [], isLoading } = useQuery({
     queryKey: ['memory-notes'],
@@ -32,8 +38,41 @@ const Timeline: React.FC = () => {
     },
   });
 
+  const doSearch = useCallback(async (query: string) => {
+    if (!query.trim() || !user) { setSearchResults(null); return; }
+    setSearching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('semantic-search', {
+        body: { query, userId: user.id, mode: 'hybrid' },
+      });
+      if (error) throw error;
+      setSearchResults(data.results || []);
+    } catch {
+      setSearchResults(
+        notes.filter((n) =>
+          n.title.toLowerCase().includes(query.toLowerCase()) ||
+          n.content.toLowerCase().includes(query.toLowerCase())
+        )
+      );
+    } finally {
+      setSearching(false);
+    }
+  }, [user, notes]);
+
+  const searchTimerRef = React.useRef<NodeJS.Timeout>();
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    clearTimeout(searchTimerRef.current);
+    if (value.trim().length >= 2) {
+      searchTimerRef.current = setTimeout(() => doSearch(value), 400);
+    } else {
+      setSearchResults(null);
+    }
+  };
+
   const categories = [...new Set(notes.map((n) => n.category || 'other'))];
-  const filtered = filter ? notes.filter((n) => (n.category || 'other') === filter) : notes;
+  const baseNotes = searchResults !== null ? searchResults : notes;
+  const filtered = filter ? baseNotes.filter((n) => (n.category || 'other') === filter) : baseNotes;
 
   const groups: { label: string; items: MemoryNote[] }[] = [];
   const buckets: Record<string, MemoryNote[]> = {};
@@ -61,6 +100,27 @@ const Timeline: React.FC = () => {
         </h1>
         <p className="text-[13px] text-muted-foreground mt-0.5">Your memories, chronologically</p>
       </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Search timeline..."
+          value={search}
+          onChange={(e) => handleSearchChange(e.target.value)}
+          className="pl-10 h-10 rounded-xl bg-secondary/60 border-0 text-[14px] placeholder:text-muted-foreground/50 focus-visible:ring-1 focus-visible:ring-primary/30"
+        />
+        {searching && (
+          <Sparkles className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary animate-pulse" />
+        )}
+      </div>
+
+      {searchResults !== null && search && (
+        <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+          <Sparkles className="w-3 h-3 text-primary" />
+          AI search · {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+        </p>
+      )}
 
       {/* Category filters */}
       <div className="flex gap-1.5 overflow-x-auto pb-0.5 -mx-1 px-1 snap-x">
