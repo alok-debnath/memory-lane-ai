@@ -101,6 +101,27 @@ const Timeline: React.FC = () => {
         <p className="text-[13px] text-muted-foreground mt-0.5">Your memories, chronologically</p>
       </div>
 
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Search timeline..."
+          value={search}
+          onChange={(e) => handleSearchChange(e.target.value)}
+          className="pl-10 h-10 rounded-xl bg-secondary/60 border-0 text-[14px] placeholder:text-muted-foreground/50 focus-visible:ring-1 focus-visible:ring-primary/30"
+        />
+        {searching && (
+          <Sparkles className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary animate-pulse" />
+        )}
+      </div>
+
+      {searchResults !== null && search && (
+        <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+          <Sparkles className="w-3 h-3 text-primary" />
+          AI search · {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+        </p>
+      )}
+
       {/* Category filters */}
       <div className="flex gap-1.5 overflow-x-auto pb-0.5 -mx-1 px-1 snap-x">
         <button
