@@ -102,6 +102,33 @@ export type Database = {
           },
         ]
       }
+      memory_history: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          memory_id: string
+          snapshot: Json
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          memory_id: string
+          snapshot: Json
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          memory_id?: string
+          snapshot?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       memory_notes: {
         Row: {
           capsule_unlock_date: string | null
@@ -240,6 +267,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_history: { Args: never; Returns: undefined }
       fuzzy_search_memories: {
         Args: {
           max_results?: number

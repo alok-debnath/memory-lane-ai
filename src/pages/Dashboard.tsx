@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { ToastAction } from '@/components/ui/toast';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
@@ -54,10 +55,53 @@ const Dashboard: React.FC = () => {
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('memory_notes').delete().eq('id', id);
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => {
+    onSuccess: (deletedId) => {
       queryClient.invalidateQueries({ queryKey: ['memory-notes'] });
-      toast({ title: 'Memory deleted' });
+      toast({
+        title: 'Memory deleted',
+        description: 'You can undo this within 7 days.',
+        action: (
+          <ToastAction
+            altText="Undo delete"
+            onClick={async () => {
+              try {
+                const { data: history } = await supabase
+                  .from('memory_history' as any)
+                  .select('id, snapshot')
+                  .eq('memory_id', deletedId)
+                  .order('created_at', { ascending: false })
+                  .limit(1);
+                if (history && history.length > 0) {
+                  const snap = (history[0] as any).snapshot;
+                  await supabase.from('memory_notes').insert({
+                    id: deletedId,
+                    user_id: user!.id,
+                    title: snap.title,
+                    content: snap.content,
+                    category: snap.category,
+                    mood: snap.mood,
+                    tags: snap.tags,
+                    reminder_date: snap.reminder_date,
+                    is_recurring: snap.is_recurring,
+                    recurrence_type: snap.recurrence_type,
+                    capsule_unlock_date: snap.capsule_unlock_date,
+                    extracted_actions: snap.extracted_actions,
+                    embedding: snap.embedding,
+                  } as any);
+                  queryClient.invalidateQueries({ queryKey: ['memory-notes'] });
+                  toast({ title: 'Memory restored!' });
+                }
+              } catch {
+                toast({ title: 'Failed to restore', variant: 'destructive' });
+              }
+            }}
+          >
+            Undo
+          </ToastAction>
+        ),
+      });
     },
   });
 
