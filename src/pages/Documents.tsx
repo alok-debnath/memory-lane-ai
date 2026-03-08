@@ -46,11 +46,15 @@ const typeColors: Record<string, string> = {
 
 const Documents: React.FC = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [selectedDoc, setSelectedDoc] = useState<DocExtraction | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<DocExtraction[] | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ['document-extractions'],
