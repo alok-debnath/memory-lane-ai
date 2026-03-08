@@ -502,6 +502,8 @@ serve(async (req) => {
 
 7. **ANALYSIS**: When asked to analyze, summarize, or find patterns, use the analyze_memories tool to get data, then provide genuine insights — not just a list.
 
+8. **UNDO & HISTORY**: Every edit and delete is automatically versioned for 7 days. When the user says "undo", "revert", "restore", or "I accidentally deleted...", use undo_last_action or get_history + restore_memory. You can show them recent changes with get_history. Always reassure them that nothing is permanently lost for 7 days.
+
 Today's date: ${new Date().toISOString().split('T')[0]}
 Format dates in a human-friendly way (e.g., "March 15, 2026" not ISO strings).
 Use markdown only when it genuinely helps readability (lists, bold for key info). Don't over-format simple answers.`;
