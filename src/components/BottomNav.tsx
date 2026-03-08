@@ -6,7 +6,7 @@ import { useCommandPanel } from './AppLayout';
 
 const primaryItems = [
   { path: '/', icon: Home, label: 'Home' },
-  { path: '/documents', icon: FileText, label: 'Docs' },
+  { path: '/diary', icon: BookOpen, label: 'Diary' },
 ];
 
 const rightItems = [
