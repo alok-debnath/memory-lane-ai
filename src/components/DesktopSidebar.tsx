@@ -6,6 +6,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 
 const mainNav = [
   { path: '/', icon: Home, label: 'Dashboard' },
+  { path: '/diary', icon: BookOpen, label: 'AI Diary' },
   { path: '/timeline', icon: Clock, label: 'Timeline' },
   { path: '/reminders', icon: Bell, label: 'Reminders' },
 ];

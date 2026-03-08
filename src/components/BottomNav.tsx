@@ -14,6 +14,7 @@ const rightItems = [
 ];
 
 const moreItems = [
+  { path: '/documents', icon: FileText, label: 'Documents' },
   { path: '/timeline', icon: Bell, label: 'Timeline' },
   { path: '/reminders', icon: Bell, label: 'Reminders' },
   { path: '/graph', icon: Network, label: 'Knowledge Graph' },
