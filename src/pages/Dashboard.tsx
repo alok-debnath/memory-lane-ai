@@ -153,10 +153,10 @@ const Dashboard: React.FC = () => {
             <Sparkles className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary animate-pulse" />
           )}
         </div>
-        <Button variant="gradient" size="lg" onClick={() => navigate('/record')} className="shrink-0">
-          <Plus className="w-5 h-5" />
-          <span className="hidden sm:inline">New Memory</span>
-        </Button>
+        <p className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
+          <Mic className="w-3 h-3" />
+          Use the mic button to add
+        </p>
       </motion.div>
 
       {semanticResults !== null && search && (
