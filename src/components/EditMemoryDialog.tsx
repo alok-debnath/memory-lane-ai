@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,7 +10,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Save, Mic, Square, Sparkles, Pencil } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Save, Mic, Square, Sparkles, Pencil, X, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -30,6 +31,7 @@ interface EditMemoryDialogProps {
 
 const categories = ['personal', 'work', 'finance', 'health', 'other'];
 const recurrenceTypes = ['daily', 'weekly', 'monthly', 'yearly'];
+const moods = ['happy', 'sad', 'anxious', 'excited', 'neutral', 'grateful', 'frustrated', 'hopeful', 'nostalgic', 'motivated'];
 const categoryEmoji: Record<string, string> = {
   personal: '🏠', work: '💼', finance: '💰', health: '💊', other: '📝',
 };
@@ -51,6 +53,9 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState('other');
+  const [mood, setMood] = useState<string | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState('');
   const [reminderDate, setReminderDate] = useState('');
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrenceType, setRecurrenceType] = useState('');
@@ -62,12 +67,25 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
       setTitle(note.title);
       setContent(note.content);
       setCategory(note.category || 'other');
+      setMood((note as any).mood || null);
       setReminderDate(note.reminder_date ? note.reminder_date.slice(0, 16) : '');
       setIsRecurring(note.is_recurring);
       setRecurrenceType(note.recurrence_type || '');
       setCapsuleDate(note.capsule_unlock_date ? note.capsule_unlock_date.slice(0, 10) : null);
       setLiveVoice('');
+      setNewTag('');
 
+      // Load tags
+      supabase
+        .from('memory_notes')
+        .select('tags')
+        .eq('id', note.id)
+        .single()
+        .then(({ data }) => {
+          setTags(data?.tags || []);
+        });
+
+      // Load attachments
       supabase
         .from('memory_attachments')
         .select('*')
@@ -85,6 +103,18 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
     }
   }, [note]);
 
+  const addTag = () => {
+    const tag = newTag.trim().toLowerCase();
+    if (tag && !tags.includes(tag)) {
+      setTags([...tags, tag]);
+    }
+    setNewTag('');
+  };
+
+  const removeTag = (tag: string) => {
+    setTags(tags.filter(t => t !== tag));
+  };
+
   const handleSave = async () => {
     if (!note) return;
     setSaving(true);
@@ -92,7 +122,8 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
       const { error } = await supabase
         .from('memory_notes')
         .update({
-          title, content, category,
+          title, content, category, mood,
+          tags,
           reminder_date: reminderDate || null,
           is_recurring: isRecurring,
           recurrence_type: isRecurring ? recurrenceType : null,
@@ -195,14 +226,14 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
               </div>
               <div className="flex-1 min-w-0">
                 <DialogTitle className="text-[16px] font-display leading-tight">{note.title}</DialogTitle>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-[11px] text-muted-foreground capitalize">{note.category || 'other'}</p>
-                  {note.mood && moodEmoji[note.mood] && (
-                    <span className="text-[11px] text-muted-foreground">
-                      {moodEmoji[note.mood]} {note.mood}
+                <DialogDescription className="flex items-center gap-2 mt-0.5">
+                  <span className="text-[11px] capitalize">{note.category || 'other'}</span>
+                  {mood && moodEmoji[mood] && (
+                    <span className="text-[11px]">
+                      {moodEmoji[mood]} {mood}
                     </span>
                   )}
-                </div>
+                </DialogDescription>
               </div>
             </div>
           </DialogHeader>
@@ -224,7 +255,7 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
             </TabsList>
           </div>
 
-          <TabsContent value="voice" className="px-5 pb-5 pt-4 mt-0">
+          <TabsContent value="voice" className="px-5 pb-5 pt-4 mt-0" forceMount>
             <div className="flex flex-col items-center py-4">
               <AnimatePresence mode="wait">
                 {voiceProcessing ? (
@@ -270,13 +301,13 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
           <TabsContent value="manual" className="px-5 pb-5 pt-3 mt-0">
             <div className="space-y-3.5">
               <div className="space-y-1">
-                <Label htmlFor="title" className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Title</Label>
-                <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} className="h-10 rounded-xl bg-secondary/40 border-0 text-[14px]" />
+                <Label htmlFor="edit-title" className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Title</Label>
+                <Input id="edit-title" value={title} onChange={(e) => setTitle(e.target.value)} className="h-10 rounded-xl bg-secondary/40 border-0 text-[14px]" />
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="content" className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Content</Label>
-                <Textarea id="content" value={content} onChange={(e) => setContent(e.target.value)} className="min-h-[80px] rounded-xl bg-secondary/40 border-0 resize-none text-[14px]" />
+                <Label htmlFor="edit-content" className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Content</Label>
+                <Textarea id="edit-content" value={content} onChange={(e) => setContent(e.target.value)} className="min-h-[80px] rounded-xl bg-secondary/40 border-0 resize-none text-[14px]" />
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
@@ -300,9 +331,58 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Reminder</Label>
-                  <Input type="datetime-local" value={reminderDate} onChange={(e) => setReminderDate(e.target.value)} className="h-10 rounded-xl bg-secondary/40 border-0 text-[13px]" />
+                  <Label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Mood</Label>
+                  <Select value={mood || '_none'} onValueChange={(v) => setMood(v === '_none' ? null : v)}>
+                    <SelectTrigger className="h-10 rounded-xl bg-secondary/40 border-0 text-[13px]">
+                      <SelectValue placeholder="None" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">None</SelectItem>
+                      {moods.map((m) => (
+                        <SelectItem key={m} value={m}>
+                          <span className="flex items-center gap-2">
+                            <span>{moodEmoji[m]}</span>
+                            <span className="capitalize">{m}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+              </div>
+
+              {/* Tags */}
+              <div className="space-y-1.5">
+                <Label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Tags</Label>
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {tags.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="text-[12px] gap-1 pr-1 rounded-lg">
+                        {tag}
+                        <button onClick={() => removeTag(tag)} className="ml-0.5 hover:text-destructive">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-1.5">
+                  <Input
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } }}
+                    placeholder="Add tag..."
+                    className="h-8 rounded-lg bg-secondary/40 border-0 text-[13px] flex-1"
+                  />
+                  <Button type="button" size="sm" variant="ghost" onClick={addTag} className="h-8 w-8 p-0 rounded-lg">
+                    <Plus className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Reminder</Label>
+                <Input type="datetime-local" value={reminderDate} onChange={(e) => setReminderDate(e.target.value)} className="h-10 rounded-xl bg-secondary/40 border-0 text-[13px]" />
               </div>
 
               <div className="flex items-center justify-between bg-secondary/30 rounded-xl px-3.5 py-2.5">
