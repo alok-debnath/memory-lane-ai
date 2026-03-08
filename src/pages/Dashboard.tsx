@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { isAfter, isBefore, addDays, format } from 'date-fns';
 import ThemeToggle from '@/components/ThemeToggle';
+import NudgeCards from '@/components/dashboard/NudgeCards';
 
 const categoryEmoji: Record<string, string> = {
   personal: '🏠', work: '💼', finance: '💰', health: '❤️', other: '📝',
