@@ -331,7 +331,10 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
               <RelatedMemories
                 note={note}
                 onSelect={(related) => {
-                  setEditNote(related as any);
+                  // Load the related memory into the form
+                  setTitle(related.title);
+                  setContent(related.content);
+                  setCategory(related.category || 'other');
                 }}
               />
             </div>
