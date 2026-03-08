@@ -1,9 +1,8 @@
-import React, { useContext } from 'react';
-import { Home, Bell, User, Brain, LogOut, Clock, BarChart3, FileText, Network, RotateCcw, Plus } from 'lucide-react';
+import React from 'react';
+import { Home, Bell, User, Brain, LogOut, Clock, BarChart3, FileText, Network, RotateCcw } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
-import { NewMemoryContext } from './AppLayout';
 
 const mainNav = [
   { path: '/', icon: Home, label: 'Dashboard' },
@@ -22,7 +21,6 @@ const DesktopSidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { open: openNewMemory } = useContext(NewMemoryContext);
 
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] || 'User';
 
@@ -55,19 +53,8 @@ const DesktopSidebar: React.FC = () => {
 
       <div className="h-px bg-border/60 mx-4" />
 
-      {/* New Memory button */}
-      <div className="px-3 pt-3 pb-1">
-        <button
-          onClick={openNewMemory}
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all btn-gradient"
-        >
-          <Plus className="w-[18px] h-[18px]" strokeWidth={2.2} />
-          New Memory
-        </button>
-      </div>
-
       {/* Main nav */}
-      <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
         <p className="section-label mt-1">Navigate</p>
         {mainNav.map((item) => (
           <NavItem key={item.path} {...item} />
