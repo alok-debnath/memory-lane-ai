@@ -16,19 +16,19 @@ const BottomNav: React.FC = () => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden flex justify-center pointer-events-none">
-      <div className="liquid-glass-bar pointer-events-auto mb-3 mx-auto px-3 py-2 flex items-center justify-around gap-0.5" style={{ width: 'min(88vw, 340px)' }}>
+      <div className="liquid-glass-bar pointer-events-auto mb-3 mx-auto px-3 py-2 flex items-center justify-around gap-0.5" style={{ width: 'min(80vw, 300px)' }}>
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className="relative flex flex-col items-center justify-center flex-1 h-12 rounded-[16px] transition-all duration-200 active:scale-[0.92]"
+              className="relative flex flex-col items-center justify-center flex-1 h-12 rounded-full transition-all duration-200 active:scale-[0.92]"
             >
               {isActive && (
                 <motion.div
                   layoutId="liquid-glass-pill"
-                  className="absolute inset-0.5 rounded-[14px] liquid-glass-pill"
+                  className="absolute inset-0.5 rounded-full liquid-glass-pill"
                   transition={{ type: 'spring', stiffness: 500, damping: 35, mass: 0.8 }}
                 />
               )}
