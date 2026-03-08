@@ -1,10 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Home, Bell, User } from 'lucide-react';
+import { Home, Bell, User, Clock } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const navItems = [
   { path: '/', icon: Home, label: 'Home' },
+  { path: '/timeline', icon: Clock, label: 'Timeline' },
   { path: '/reminders', icon: Bell, label: 'Reminders' },
   { path: '/profile', icon: User, label: 'Profile' },
 ];
@@ -31,16 +32,8 @@ const BottomNav: React.FC = () => {
                   transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 />
               )}
-              <item.icon
-                className={`w-5 h-5 relative z-10 transition-colors ${
-                  isActive ? 'text-primary' : 'text-muted-foreground'
-                }`}
-              />
-              <span
-                className={`text-[10px] font-medium relative z-10 transition-colors ${
-                  isActive ? 'text-primary' : 'text-muted-foreground'
-                }`}
-              >
+              <item.icon className={`w-5 h-5 relative z-10 transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+              <span className={`text-[10px] font-medium relative z-10 transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
                 {item.label}
               </span>
             </button>

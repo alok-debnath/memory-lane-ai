@@ -2,35 +2,27 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mic, Square, X, Send, Loader2, Bot, User,
-  Keyboard, Brain, ArrowDown,
+  Keyboard, Brain, ArrowDown, Volume2, VolumeX,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import ReactMarkdown from 'react-markdown';
+import { useTTS } from '@/hooks/useTTS';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
 
-// Animated voice waveform bars
 const VoiceWaveform: React.FC = () => (
   <div className="flex items-center justify-center gap-[3px] h-8">
     {[...Array(5)].map((_, i) => (
       <motion.div
         key={i}
         className="w-[3px] rounded-full bg-primary"
-        animate={{
-          height: [8, 20 + Math.random() * 12, 8],
-        }}
-        transition={{
-          repeat: Infinity,
-          duration: 0.6 + Math.random() * 0.4,
-          delay: i * 0.08,
-          ease: 'easeInOut',
-        }}
+        animate={{ height: [8, 20 + Math.random() * 12, 8] }}
+        transition={{ repeat: Infinity, duration: 0.6 + Math.random() * 0.4, delay: i * 0.08, ease: 'easeInOut' }}
       />
     ))}
   </div>
@@ -45,6 +37,7 @@ const AIChatPanel: React.FC = () => {
   const [isListening, setIsListening] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState('');
   const [duration, setDuration] = useState(0);
+  const [ttsEnabled, setTtsEnabled] = useState(() => localStorage.getItem('memora-tts') !== 'false');
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -52,17 +45,14 @@ const AIChatPanel: React.FC = () => {
   const recognitionRef = useRef<any>(null);
   const finalTranscriptRef = useRef('');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const { speak, stop, speaking } = useTTS();
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, liveTranscript]);
 
   useEffect(() => {
-    if (open && mode === 'text' && inputRef.current) {
-      setTimeout(() => inputRef.current?.focus(), 100);
-    }
+    if (open && mode === 'text' && inputRef.current) setTimeout(() => inputRef.current?.focus(), 100);
   }, [open, mode]);
 
   useEffect(() => {
@@ -71,6 +61,10 @@ const AIChatPanel: React.FC = () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('memora-tts', ttsEnabled ? 'true' : 'false');
+  }, [ttsEnabled]);
 
   const sendToAI = useCallback(async (text: string) => {
     if (!text.trim() || loading || !user) return;
@@ -84,14 +78,14 @@ const AIChatPanel: React.FC = () => {
             body: { messages: all.map((m) => ({ role: m.role, content: m.content })), userId: user.id },
           });
           if (error) throw error;
-          if (data.error) {
-            setMessages((p) => [...p, { role: 'assistant', content: `⚠️ ${data.error}` }]);
-          } else {
-            setMessages((p) => [...p, { role: 'assistant', content: data.reply }]);
-            if (data.mutated) queryClient.invalidateQueries({ queryKey: ['memory-notes'] });
-          }
+          const reply = data.error ? `⚠️ ${data.error}` : data.reply;
+          setMessages((p) => [...p, { role: 'assistant', content: reply }]);
+          if (data.mutated) queryClient.invalidateQueries({ queryKey: ['memory-notes'] });
+          // Auto-speak response
+          if (ttsEnabled && !data.error) speak(reply);
         } catch (err: any) {
-          setMessages((p) => [...p, { role: 'assistant', content: `Something went wrong. ${err.message}` }]);
+          const errMsg = `Something went wrong. ${err.message}`;
+          setMessages((p) => [...p, { role: 'assistant', content: errMsg }]);
         } finally {
           setLoading(false);
         }
@@ -99,9 +93,11 @@ const AIChatPanel: React.FC = () => {
       return all;
     });
     setInput('');
-  }, [loading, user, queryClient]);
+  }, [loading, user, queryClient, ttsEnabled, speak]);
 
   const startListening = useCallback(() => {
+    // Stop any ongoing TTS when user starts speaking
+    stop();
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) {
       setMessages((p) => [...p, { role: 'assistant', content: "⚠️ Voice not supported here. Use Chrome/Edge or switch to text." }]);
@@ -136,7 +132,7 @@ const AIChatPanel: React.FC = () => {
     setIsListening(true);
     setDuration(0);
     intervalRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
-  }, [sendToAI]);
+  }, [sendToAI, stop]);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current && isListening) recognitionRef.current.stop();
@@ -167,7 +163,6 @@ const AIChatPanel: React.FC = () => {
               onClick={() => setOpen(true)}
               className="group relative h-[60px] w-[60px] rounded-full flex items-center justify-center overflow-hidden"
             >
-              {/* Gradient background with animated glow */}
               <div className="absolute inset-0 btn-gradient rounded-full" />
               <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle,hsl(var(--primary)/0.4)_0%,transparent_70%)] blur-lg scale-150" />
               <Mic className="w-6 h-6 text-primary-foreground relative z-10" />
@@ -205,6 +200,16 @@ const AIChatPanel: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-0.5">
+                {/* TTS toggle */}
+                <button
+                  onClick={() => { setTtsEnabled((v) => !v); if (speaking) stop(); }}
+                  className={`h-9 w-9 rounded-xl flex items-center justify-center transition-all ${
+                    ttsEnabled ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+                  }`}
+                  title={ttsEnabled ? 'Auto-speak on' : 'Auto-speak off'}
+                >
+                  {ttsEnabled ? <Volume2 className="w-[18px] h-[18px]" /> : <VolumeX className="w-[18px] h-[18px]" />}
+                </button>
                 <button
                   onClick={() => setMode(mode === 'voice' ? 'text' : 'voice')}
                   className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all"
@@ -212,7 +217,7 @@ const AIChatPanel: React.FC = () => {
                   {mode === 'voice' ? <Keyboard className="w-[18px] h-[18px]" /> : <Mic className="w-[18px] h-[18px]" />}
                 </button>
                 <button
-                  onClick={() => setOpen(false)}
+                  onClick={() => { setOpen(false); stop(); }}
                   className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all"
                 >
                   <X className="w-[18px] h-[18px]" />
@@ -231,7 +236,6 @@ const AIChatPanel: React.FC = () => {
                   transition={{ delay: 0.15 }}
                   className="flex flex-col items-center pt-4"
                 >
-                  {/* Hero mic visual */}
                   <div className="relative mb-6">
                     <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center border border-primary/10">
                       <Mic className="w-9 h-9 text-primary/70" />
@@ -242,9 +246,7 @@ const AIChatPanel: React.FC = () => {
                       transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
                     />
                   </div>
-                  <h4 className="font-display font-bold text-foreground text-base mb-1">
-                    Hey, what's on your mind?
-                  </h4>
+                  <h4 className="font-display font-bold text-foreground text-base mb-1">Hey, what's on your mind?</h4>
                   <p className="text-[13px] text-muted-foreground text-center max-w-[260px] mb-6 leading-relaxed">
                     Speak or type to create, find, edit or remove any memory
                   </p>
@@ -293,6 +295,16 @@ const AIChatPanel: React.FC = () => {
                     ) : (
                       msg.content
                     )}
+                    {/* Tap to replay TTS */}
+                    {msg.role === 'assistant' && ttsEnabled && (
+                      <button
+                        onClick={() => speaking ? stop() : speak(msg.content)}
+                        className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        {speaking ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+                        {speaking ? 'Stop' : 'Listen'}
+                      </button>
+                    )}
                   </div>
                   {msg.role === 'user' && (
                     <div className="w-7 h-7 rounded-xl bg-secondary/60 flex items-center justify-center shrink-0 mt-0.5 border border-border/20">
@@ -302,7 +314,6 @@ const AIChatPanel: React.FC = () => {
                 </motion.div>
               ))}
 
-              {/* Live transcript while listening */}
               {isListening && liveTranscript && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-2.5 justify-end">
                   <div className="max-w-[78%] rounded-2xl rounded-br-lg px-4 py-2.5 text-[13px] bg-primary/15 text-foreground/80 italic border border-primary/10">
@@ -340,35 +351,21 @@ const AIChatPanel: React.FC = () => {
                 <div className="flex flex-col items-center gap-2 py-1">
                   <AnimatePresence mode="wait">
                     {loading ? (
-                      <motion.div
-                        key="proc"
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.8, opacity: 0 }}
-                        className="flex flex-col items-center gap-2"
-                      >
+                      <motion.div key="proc" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className="flex flex-col items-center gap-2">
                         <div className="w-[52px] h-[52px] rounded-full bg-primary/10 flex items-center justify-center border border-primary/10">
                           <Loader2 className="w-6 h-6 text-primary animate-spin" />
                         </div>
                         <span className="text-[11px] text-muted-foreground font-medium">Thinking...</span>
                       </motion.div>
                     ) : isListening ? (
-                      <motion.div
-                        key="listen"
-                        initial={{ scale: 0.8 }}
-                        animate={{ scale: 1 }}
-                        className="flex flex-col items-center gap-2"
-                      >
+                      <motion.div key="listen" initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="flex flex-col items-center gap-2">
                         <div className="relative">
                           <motion.div
                             className="absolute inset-0 rounded-full bg-destructive/20"
                             animate={{ scale: [1, 1.4], opacity: [0.5, 0] }}
                             transition={{ repeat: Infinity, duration: 1.2, ease: 'easeOut' }}
                           />
-                          <button
-                            onClick={stopListening}
-                            className="relative w-[52px] h-[52px] rounded-full bg-destructive flex items-center justify-center cursor-pointer z-10"
-                          >
+                          <button onClick={stopListening} className="relative w-[52px] h-[52px] rounded-full bg-destructive flex items-center justify-center cursor-pointer z-10">
                             <Square className="w-5 h-5 text-destructive-foreground" />
                           </button>
                         </div>
@@ -378,13 +375,7 @@ const AIChatPanel: React.FC = () => {
                         </div>
                       </motion.div>
                     ) : (
-                      <motion.div
-                        key="idle"
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.8, opacity: 0 }}
-                        className="flex flex-col items-center gap-2"
-                      >
+                      <motion.div key="idle" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className="flex flex-col items-center gap-2">
                         <motion.button
                           whileHover={{ scale: 1.06 }}
                           whileTap={{ scale: 0.94 }}

@@ -6,9 +6,11 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Timeline from "./pages/Timeline";
 import Reminders from "./pages/Reminders";
 import Profile from "./pages/Profile";
 import AppLayout from "./components/AppLayout";
+import Onboarding from "./components/Onboarding";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,10 +46,12 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <Onboarding />
           <Routes>
             <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/timeline" element={<Timeline />} />
               <Route path="/reminders" element={<Reminders />} />
               <Route path="/profile" element={<Profile />} />
             </Route>
