@@ -19,14 +19,15 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { query, userId } = await req.json();
+    const body = await req.json();
+    const { query, userId, searchDocs } = body;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const supabase = getSupabase();
 
-    // Run all 3 search layers in parallel for maximum speed
-    const [semanticResults, fuzzyResults] = await Promise.all([
+    // Run all search layers in parallel for maximum speed
+    const [semanticResults, fuzzyResults, documentResults] = await Promise.all([
       // Layer 1: Vector semantic search
       (async () => {
         try {
@@ -73,6 +74,36 @@ serve(async (req) => {
           }));
         } catch { return []; }
       })(),
+
+      // Layer 3: Document extraction search (vector search through uploaded docs)
+      (async () => {
+        try {
+          const embResponse = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "text-embedding-3-small",
+              input: query,
+              dimensions: 768,
+            }),
+          });
+          if (!embResponse.ok) return [];
+          const embData = await embResponse.json();
+          const queryEmbedding = embData.data?.[0]?.embedding;
+          if (!queryEmbedding) return [];
+
+          const { data } = await supabase.rpc("match_documents", {
+            query_embedding: queryEmbedding,
+            match_threshold: 0.25,
+            match_count: 10,
+            p_user_id: userId,
+          });
+          return data || [];
+        } catch { return []; }
+      })(),
     ]);
 
     // Merge, deduplicate, boost multi-source matches
@@ -97,7 +128,7 @@ serve(async (req) => {
         return clean;
       });
 
-    return new Response(JSON.stringify({ results: merged }), {
+    return new Response(JSON.stringify({ results: merged, documentResults: documentResults || [] }), {
       headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "private, max-age=30" },
     });
   } catch (e) {

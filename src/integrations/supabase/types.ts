@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      document_extractions: {
+        Row: {
+          attachment_id: string
+          created_at: string
+          document_type: string | null
+          embedding: string | null
+          expiry_date: string | null
+          extracted_text: string
+          id: string
+          key_details: Json | null
+          memory_id: string
+          user_id: string
+        }
+        Insert: {
+          attachment_id: string
+          created_at?: string
+          document_type?: string | null
+          embedding?: string | null
+          expiry_date?: string | null
+          extracted_text?: string
+          id?: string
+          key_details?: Json | null
+          memory_id: string
+          user_id: string
+        }
+        Update: {
+          attachment_id?: string
+          created_at?: string
+          document_type?: string | null
+          embedding?: string | null
+          expiry_date?: string | null
+          extracted_text?: string
+          id?: string
+          key_details?: Json | null
+          memory_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_extractions_memory_id_fkey"
+            columns: ["memory_id"]
+            isOneToOne: false
+            referencedRelation: "memory_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memory_attachments: {
         Row: {
           created_at: string
@@ -68,6 +115,7 @@ export type Database = {
           mood: string | null
           recurrence_type: string | null
           reminder_date: string | null
+          tags: string[] | null
           title: string
           updated_at: string
           user_id: string
@@ -84,6 +132,7 @@ export type Database = {
           mood?: string | null
           recurrence_type?: string | null
           reminder_date?: string | null
+          tags?: string[] | null
           title: string
           updated_at?: string
           user_id: string
@@ -100,11 +149,56 @@ export type Database = {
           mood?: string | null
           recurrence_type?: string | null
           reminder_date?: string | null
+          tags?: string[] | null
           title?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: []
+      }
+      review_schedule: {
+        Row: {
+          created_at: string
+          ease_factor: number
+          id: string
+          interval_days: number
+          last_reviewed_at: string | null
+          memory_id: string
+          next_review_at: string
+          repetitions: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ease_factor?: number
+          id?: string
+          interval_days?: number
+          last_reviewed_at?: string | null
+          memory_id: string
+          next_review_at?: string
+          repetitions?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          ease_factor?: number
+          id?: string
+          interval_days?: number
+          last_reviewed_at?: string | null
+          memory_id?: string
+          next_review_at?: string
+          repetitions?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_schedule_memory_id_fkey"
+            columns: ["memory_id"]
+            isOneToOne: false
+            referencedRelation: "memory_notes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shared_memories: {
         Row: {
@@ -197,6 +291,25 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string
+        }[]
+      }
+      match_documents: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          p_user_id?: string
+          query_embedding: string
+        }
+        Returns: {
+          attachment_id: string
+          created_at: string
+          document_type: string
+          expiry_date: string
+          extracted_text: string
+          id: string
+          key_details: Json
+          memory_id: string
+          similarity: number
         }[]
       }
       match_memories: {

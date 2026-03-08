@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Upload, X, FileIcon, Image, FileText, Film, Music, Loader2 } from 'lucide-react';
+import { Upload, X, FileIcon, Image, FileText, Film, Music, Loader2, Sparkles, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +12,11 @@ interface UploadedFile {
   file_type: string;
   file_size: number;
   url?: string;
+  extraction?: {
+    document_type?: string;
+    summary?: string;
+    expiry_date?: string;
+  } | null;
 }
 
 interface FileUploaderProps {
@@ -41,10 +46,56 @@ const FileUploader: React.FC<FileUploaderProps> = ({ memoryId, existingFiles = [
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [files, setFiles] = useState<UploadedFile[]>(existingFiles);
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
   const getPublicUrl = (path: string) => {
     const { data } = supabase.storage.from('memory-attachments').getPublicUrl(path);
     return data.publicUrl;
+  };
+
+  const processDocument = async (file: UploadedFile) => {
+    if (!user || !file.id) return;
+    const fileUrl = file.url || getPublicUrl(file.file_path);
+
+    setProcessingIds(prev => new Set(prev).add(file.id!));
+    try {
+      const { data, error } = await supabase.functions.invoke('process-document', {
+        body: {
+          attachmentId: file.id,
+          memoryId,
+          userId: user.id,
+          fileUrl,
+          fileType: file.file_type,
+          fileName: file.file_name,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.extraction) {
+        // Update file with extraction info
+        const updated = files.map(f =>
+          f.id === file.id ? { ...f, extraction: data.extraction } : f
+        );
+        setFiles(updated);
+        onFilesChange?.(updated);
+
+        const docType = data.extraction.document_type;
+        toast({
+          title: `📄 ${docType === 'warranty' ? 'Warranty' : docType === 'receipt' ? 'Receipt' : 'Document'} processed!`,
+          description: data.extraction.summary || 'Content extracted and indexed for search',
+        });
+      }
+    } catch (err: any) {
+      console.error('Document processing error:', err);
+      // Silent fail - processing is optional
+    } finally {
+      setProcessingIds(prev => {
+        const next = new Set(prev);
+        next.delete(file.id!);
+        return next;
+      });
+    }
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,20 +131,34 @@ const FileUploader: React.FC<FileUploaderProps> = ({ memoryId, existingFiles = [
 
         if (insertError) throw insertError;
 
-        newFiles.push({
+        const uploadedFile: UploadedFile = {
           id: insertData.id,
           file_name: file.name,
           file_path: path,
           file_type: file.type,
           file_size: file.size,
           url: getPublicUrl(path),
-        });
+        };
+
+        newFiles.push(uploadedFile);
       }
 
       const updated = [...files, ...newFiles];
       setFiles(updated);
       onFilesChange?.(updated);
       toast({ title: `${newFiles.length} file(s) uploaded` });
+
+      // Trigger AI document processing for each file (non-blocking)
+      for (const file of newFiles) {
+        if (
+          file.file_type.startsWith('image/') ||
+          file.file_type === 'application/pdf' ||
+          file.file_type.includes('text') ||
+          file.file_type.includes('document')
+        ) {
+          processDocument(file);
+        }
+      }
     } catch (err: any) {
       toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
     } finally {
@@ -133,7 +198,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ memoryId, existingFiles = [
         ) : (
           <Upload className="w-4 h-4 mr-2" />
         )}
-        {uploading ? 'Uploading...' : 'Attach files'}
+        {uploading ? 'Uploading...' : 'Attach files (warranties, receipts, docs)'}
       </Button>
 
       {files.length > 0 && (
@@ -156,7 +221,21 @@ const FileUploader: React.FC<FileUploaderProps> = ({ memoryId, existingFiles = [
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{file.file_name}</p>
-                <p className="text-xs text-muted-foreground">{formatSize(file.file_size)}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-muted-foreground">{formatSize(file.file_size)}</p>
+                  {processingIds.has(file.id || '') && (
+                    <span className="flex items-center gap-1 text-[10px] text-primary">
+                      <Sparkles className="w-3 h-3 animate-pulse" />
+                      Analyzing...
+                    </span>
+                  )}
+                  {file.extraction?.document_type && (
+                    <span className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">
+                      <ShieldCheck className="w-3 h-3" />
+                      {file.extraction.document_type}
+                    </span>
+                  )}
+                </div>
               </div>
               <Button
                 variant="ghost"

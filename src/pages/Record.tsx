@@ -47,6 +47,7 @@ const Record: React.FC = () => {
         mood: data.mood || null,
         extracted_actions: data.extracted_actions || null,
         capsule_unlock_date: capsuleDate ? new Date(capsuleDate).toISOString() : null,
+        tags: data.tags || [],
       };
       if (data.embedding) {
         insertPayload.embedding = data.embedding;

@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -19,6 +20,7 @@ const categoryEmoji: Record<string, string> = {
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState('');
@@ -35,6 +37,13 @@ const Dashboard: React.FC = () => {
         .from('memory_notes')
         .select('id, title, content, category, reminder_date, is_recurring, recurrence_type, created_at, updated_at, user_id, mood, capsule_unlock_date, extracted_actions')
         .order('created_at', { ascending: false });
+      // Fetch tags separately (new column)
+      if (data) {
+        const ids = data.map(d => d.id);
+        const { data: tagData } = await (supabase as any).from('memory_notes').select('id, tags').in('id', ids);
+        const tagMap = new Map((tagData || []).map((t: any) => [t.id, t.tags || []]));
+        data.forEach((d: any) => { d.tags = tagMap.get(d.id) || []; });
+      }
       if (error) throw error;
       return data as MemoryNote[];
     },
@@ -120,6 +129,24 @@ const Dashboard: React.FC = () => {
             <ThemeToggle />
           </div>
         </div>
+      </div>
+
+      {/* Quick Actions (mobile access to new features) */}
+      <div className="grid grid-cols-3 gap-2 lg:hidden">
+        {[
+          { path: '/documents', icon: '📄', label: 'Documents' },
+          { path: '/review', icon: '🧠', label: 'Review' },
+          { path: '/graph', icon: '🕸️', label: 'Graph' },
+        ].map(item => (
+          <button
+            key={item.path}
+            onClick={() => navigate(item.path)}
+            className="native-card p-3 text-center active:scale-95 transition-transform"
+          >
+            <span className="text-xl">{item.icon}</span>
+            <p className="text-[11px] font-medium text-muted-foreground mt-1">{item.label}</p>
+          </button>
+        ))}
       </div>
 
       {/* Daily Flashback */}
