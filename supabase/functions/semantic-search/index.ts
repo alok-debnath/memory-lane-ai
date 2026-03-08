@@ -25,8 +25,10 @@ serve(async (req) => {
 
     const supabase = getSupabase();
 
-    // Run all 3 search layers in parallel for maximum speed
-    const [semanticResults, fuzzyResults] = await Promise.all([
+    const searchDocs = (await req.json().catch(() => ({}))).searchDocs;
+
+    // Run all search layers in parallel for maximum speed
+    const [semanticResults, fuzzyResults, documentResults] = await Promise.all([
       // Layer 1: Vector semantic search
       (async () => {
         try {
