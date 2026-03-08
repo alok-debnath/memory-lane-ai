@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   User, Brain, Bell, LogOut, Calendar, Shield, Download, Trash2,
-  ChevronRight, Loader2, CheckCircle, Settings,
+  ChevronRight, Loader2, CheckCircle, Moon, ChevronDown,
 } from 'lucide-react';
 import { type MemoryNote } from '@/components/MemoryCard';
 import { useToast } from '@/hooks/use-toast';
@@ -33,9 +33,9 @@ const Profile: React.FC = () => {
   });
 
   const stats = [
-    { icon: Brain, label: 'Memories', value: notes.length, color: 'text-primary' },
-    { icon: Bell, label: 'Reminders', value: notes.filter((n) => n.reminder_date).length, color: 'text-primary' },
-    { icon: Calendar, label: 'Recurring', value: notes.filter((n) => n.is_recurring).length, color: 'text-primary' },
+    { icon: Brain, label: 'Memories', value: notes.length },
+    { icon: Bell, label: 'Reminders', value: notes.filter((n) => n.reminder_date).length },
+    { icon: Calendar, label: 'Recurring', value: notes.filter((n) => n.is_recurring).length },
   ];
 
   const categoryBreakdown = notes.reduce((acc: Record<string, number>, n) => {
@@ -47,7 +47,7 @@ const Profile: React.FC = () => {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword.length < 6) {
-      toast({ title: 'Error', description: 'Password must be at least 6 characters', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Minimum 6 characters', variant: 'destructive' });
       return;
     }
     setPasswordLoading(true);
@@ -68,13 +68,9 @@ const Profile: React.FC = () => {
     setExporting(true);
     try {
       const exportData = notes.map((n) => ({
-        title: n.title,
-        content: n.content,
-        category: n.category,
-        reminder_date: n.reminder_date,
-        is_recurring: n.is_recurring,
-        recurrence_type: n.recurrence_type,
-        created_at: n.created_at,
+        title: n.title, content: n.content, category: n.category,
+        reminder_date: n.reminder_date, is_recurring: n.is_recurring,
+        recurrence_type: n.recurrence_type, created_at: n.created_at,
       }));
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -83,14 +79,14 @@ const Profile: React.FC = () => {
       a.download = `memora-export-${format(new Date(), 'yyyy-MM-dd')}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      toast({ title: 'Exported!', description: `${notes.length} memories exported` });
+      toast({ title: 'Exported!', description: `${notes.length} memories` });
     } finally {
       setExporting(false);
     }
   };
 
-  const handleDeleteAllMemories = async () => {
-    if (!confirm('Are you sure you want to delete ALL memories? This cannot be undone.')) return;
+  const handleDeleteAll = async () => {
+    if (!confirm('Delete ALL memories? This cannot be undone.')) return;
     try {
       const { error } = await supabase.from('memory_notes').delete().eq('user_id', user!.id);
       if (error) throw error;
@@ -101,177 +97,143 @@ const Profile: React.FC = () => {
     }
   };
 
-  const memberSince = user?.created_at ? format(new Date(user.created_at), 'MMMM yyyy') : 'N/A';
+  const memberSince = user?.created_at ? format(new Date(user.created_at), 'MMMM yyyy') : '';
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Profile</h1>
-      </motion.div>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-display font-bold text-foreground tracking-tight">Profile</h1>
 
-      {/* User Info */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="glass-card-elevated p-6"
-      >
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center shrink-0">
-            <User className="w-8 h-8 text-primary-foreground" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="font-display font-bold text-foreground text-lg truncate">
-              {user?.user_metadata?.full_name || 'User'}
-            </h2>
-            <p className="text-muted-foreground text-sm truncate">{user?.email}</p>
-            <p className="text-xs text-muted-foreground/60 mt-0.5">Member since {memberSince}</p>
-          </div>
+      {/* User card */}
+      <div className="native-card-elevated p-5 flex items-center gap-4">
+        <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shrink-0">
+          <span className="text-xl font-bold text-primary-foreground">
+            {(user?.user_metadata?.full_name || 'U')[0].toUpperCase()}
+          </span>
         </div>
-      </motion.div>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-[17px] font-display font-bold text-foreground truncate">
+            {user?.user_metadata?.full_name || 'User'}
+          </h2>
+          <p className="text-[13px] text-muted-foreground truncate">{user?.email}</p>
+          {memberSince && <p className="text-[11px] text-muted-foreground/60 mt-0.5">Since {memberSince}</p>}
+        </div>
+      </div>
 
-      {/* Stats */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="grid grid-cols-3 gap-3"
-      >
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-2">
         {stats.map((stat) => (
-          <div key={stat.label} className="glass-card p-4 text-center">
-            <stat.icon className={`w-5 h-5 mx-auto mb-2 ${stat.color}`} />
-            <p className="text-2xl font-display font-bold text-foreground">{stat.value}</p>
-            <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
+          <div key={stat.label} className="native-card p-3.5 text-center">
+            <p className="text-xl font-display font-bold text-foreground">{stat.value}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{stat.label}</p>
           </div>
         ))}
-      </motion.div>
+      </div>
 
       {/* Category breakdown */}
       {Object.keys(categoryBreakdown).length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="glass-card p-5"
-        >
-          <h3 className="font-display font-semibold text-foreground text-sm mb-3">Category Breakdown</h3>
-          <div className="space-y-2">
+        <div className="native-card p-4">
+          <p className="section-label mb-3">Categories</p>
+          <div className="space-y-2.5">
             {Object.entries(categoryBreakdown)
               .sort(([, a], [, b]) => b - a)
               .map(([cat, count]) => (
                 <div key={cat} className="flex items-center gap-3">
-                  <span className="text-sm capitalize text-foreground w-20">{cat}</span>
-                  <div className="flex-1 h-2 rounded-full bg-secondary/50 overflow-hidden">
+                  <span className="text-[13px] capitalize text-foreground w-16 truncate">{cat}</span>
+                  <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${(count / notes.length) * 100}%` }}
-                      transition={{ delay: 0.4, duration: 0.6 }}
+                      transition={{ delay: 0.3, duration: 0.5 }}
                       className="h-full rounded-full bg-primary"
                     />
                   </div>
-                  <span className="text-xs text-muted-foreground w-8 text-right">{count}</span>
+                  <span className="text-[11px] text-muted-foreground w-6 text-right">{count}</span>
                 </div>
               ))}
           </div>
-        </motion.div>
+        </div>
       )}
 
-      {/* Settings */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="space-y-2"
-      >
-        <h3 className="font-display font-semibold text-foreground text-sm mb-3 px-1">Settings</h3>
-
-        {/* Theme */}
-        <div className="glass-card px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Settings className="w-5 h-5 text-muted-foreground" />
-            <span className="text-sm font-medium text-foreground">Appearance</span>
-          </div>
-          <ThemeToggle />
-        </div>
-
-        {/* Change Password */}
-        <div className="glass-card overflow-hidden">
-          <button
-            onClick={() => setChangingPassword(!changingPassword)}
-            className="w-full px-4 py-3 flex items-center justify-between hover:bg-secondary/30 transition-colors"
-          >
+      {/* Settings group */}
+      <div>
+        <p className="section-label">Settings</p>
+        <div className="native-group">
+          {/* Theme */}
+          <div className="native-group-item justify-between">
             <div className="flex items-center gap-3">
-              <Shield className="w-5 h-5 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">Change Password</span>
+              <Moon className="w-[18px] h-[18px] text-muted-foreground" />
+              <span className="text-[15px] text-foreground">Appearance</span>
             </div>
-            <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${changingPassword ? 'rotate-90' : ''}`} />
-          </button>
-          {changingPassword && (
-            <motion.form
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              onSubmit={handleChangePassword}
-              className="px-4 pb-4 space-y-3"
+            <ThemeToggle />
+          </div>
+
+          {/* Change Password */}
+          <div>
+            <button
+              onClick={() => setChangingPassword(!changingPassword)}
+              className="native-group-item w-full justify-between"
             >
-              <div className="space-y-1.5">
-                <Label htmlFor="newpw" className="text-xs text-muted-foreground">New Password</Label>
+              <div className="flex items-center gap-3">
+                <Shield className="w-[18px] h-[18px] text-muted-foreground" />
+                <span className="text-[15px] text-foreground">Change Password</span>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${changingPassword ? 'rotate-180' : ''}`} />
+            </button>
+            {changingPassword && (
+              <form onSubmit={handleChangePassword} className="px-4 pb-4 space-y-3">
                 <Input
-                  id="newpw"
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="At least 6 characters"
-                  className="h-10 rounded-xl"
+                  placeholder="New password (6+ characters)"
+                  className="h-10 rounded-xl bg-secondary/60 border-0 text-[14px]"
                   minLength={6}
                   required
                 />
-              </div>
-              <Button type="submit" size="sm" variant="gradient" className="w-full" disabled={passwordLoading}>
-                {passwordLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle className="w-4 h-4 mr-1" /> Update Password</>}
-              </Button>
-            </motion.form>
-          )}
-        </div>
-
-        {/* Export */}
-        <button
-          onClick={handleExport}
-          disabled={exporting || notes.length === 0}
-          className="glass-card w-full px-4 py-3 flex items-center justify-between hover:bg-secondary/30 transition-colors disabled:opacity-50"
-        >
-          <div className="flex items-center gap-3">
-            <Download className="w-5 h-5 text-muted-foreground" />
-            <span className="text-sm font-medium text-foreground">Export All Memories</span>
+                <Button type="submit" size="sm" variant="gradient" className="w-full h-10 rounded-xl" disabled={passwordLoading}>
+                  {passwordLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Update Password'}
+                </Button>
+              </form>
+            )}
           </div>
-          <span className="text-xs text-muted-foreground">{notes.length} memories</span>
-        </button>
 
-        {/* Delete All */}
-        <button
-          onClick={handleDeleteAllMemories}
-          disabled={notes.length === 0}
-          className="glass-card w-full px-4 py-3 flex items-center gap-3 hover:bg-destructive/5 transition-colors text-destructive disabled:opacity-50"
-        >
-          <Trash2 className="w-5 h-5" />
-          <span className="text-sm font-medium">Delete All Memories</span>
-        </button>
-      </motion.div>
+          {/* Export */}
+          <button
+            onClick={handleExport}
+            disabled={exporting || notes.length === 0}
+            className="native-group-item w-full justify-between disabled:opacity-40"
+          >
+            <div className="flex items-center gap-3">
+              <Download className="w-[18px] h-[18px] text-muted-foreground" />
+              <span className="text-[15px] text-foreground">Export Memories</span>
+            </div>
+            <span className="text-[13px] text-muted-foreground">{notes.length}</span>
+          </button>
+        </div>
+      </div>
 
-      {/* Sign Out */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-      >
-        <Button
-          variant="outline"
-          className="w-full justify-center gap-2 h-12 rounded-xl text-destructive hover:text-destructive hover:bg-destructive/5"
-          onClick={signOut}
-        >
-          <LogOut className="w-5 h-5" />
-          Sign Out
-        </Button>
-      </motion.div>
+      {/* Danger zone */}
+      <div>
+        <p className="section-label">Danger Zone</p>
+        <div className="native-group">
+          <button
+            onClick={handleDeleteAll}
+            disabled={notes.length === 0}
+            className="native-group-item w-full text-destructive disabled:opacity-40"
+          >
+            <Trash2 className="w-[18px] h-[18px]" />
+            <span className="text-[15px] font-medium">Delete All Memories</span>
+          </button>
+
+          <button
+            onClick={signOut}
+            className="native-group-item w-full text-destructive"
+          >
+            <LogOut className="w-[18px] h-[18px]" />
+            <span className="text-[15px] font-medium">Sign Out</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

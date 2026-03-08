@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { type MemoryNote } from '@/components/MemoryCard';
-import { Bell, Calendar, Repeat } from 'lucide-react';
+import { Bell, Calendar, Repeat, CheckCircle } from 'lucide-react';
 import { format, isPast, isToday, isTomorrow, isThisWeek, isAfter } from 'date-fns';
 
 const Reminders: React.FC = () => {
@@ -39,78 +39,87 @@ const Reminders: React.FC = () => {
   const past = notes.filter((n) => n.reminder_date && isPast(new Date(n.reminder_date)) && !isToday(new Date(n.reminder_date)));
 
   const sections = [
-    { title: 'Today', items: today, color: 'text-primary' },
-    { title: 'Tomorrow', items: tomorrow, color: 'text-foreground' },
-    { title: 'This Week', items: thisWeek, color: 'text-foreground' },
-    { title: 'Later', items: later, color: 'text-muted-foreground' },
-    { title: 'Past', items: past, color: 'text-muted-foreground' },
+    { title: 'Today', items: today, accent: true },
+    { title: 'Tomorrow', items: tomorrow, accent: false },
+    { title: 'This Week', items: thisWeek, accent: false },
+    { title: 'Later', items: later, accent: false },
+    { title: 'Past', items: past, accent: false },
   ].filter((s) => s.items.length > 0);
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Reminders</h1>
-        <p className="text-muted-foreground mt-1">{notes.length} scheduled reminders</p>
-      </motion.div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-display font-bold text-foreground tracking-tight">Reminders</h1>
+        <p className="text-[13px] text-muted-foreground mt-0.5">{notes.length} scheduled</p>
+      </div>
 
       {isLoading ? (
-        <div className="space-y-4">
+        <div className="native-group">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="glass-card p-5 animate-pulse">
-              <div className="h-4 bg-muted rounded w-1/3 mb-3" />
-              <div className="h-3 bg-muted rounded w-2/3" />
+            <div key={i} className="px-4 py-4 animate-pulse">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-muted" />
+                <div className="flex-1">
+                  <div className="h-4 bg-muted rounded w-1/3 mb-2" />
+                  <div className="h-3 bg-muted rounded w-1/2" />
+                </div>
+              </div>
             </div>
           ))}
         </div>
       ) : sections.length === 0 ? (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
-          <Bell className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-          <h3 className="font-display font-semibold text-foreground text-lg">No reminders</h3>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Create a memory with a date to set up reminders
-          </p>
-        </motion.div>
+        <div className="text-center py-16">
+          <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-4">
+            <Bell className="w-8 h-8 text-muted-foreground/40" />
+          </div>
+          <h3 className="font-display font-semibold text-foreground text-base">No reminders</h3>
+          <p className="text-[13px] text-muted-foreground mt-1">Create a memory with a date to set reminders</p>
+        </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {sections.map((section) => (
-            <motion.div
-              key={section.title}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <h2 className={`font-display font-semibold text-sm mb-3 ${section.color}`}>
+            <div key={section.title}>
+              <p className={`section-label ${section.accent ? '!text-primary' : ''}`}>
                 {section.title}
-              </h2>
-              <div className="space-y-2">
-                <AnimatePresence>
-                  {section.items.map((note, i) => (
-                    <motion.div
-                      key={note.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.05 }}
-                      className="glass-card p-4 flex items-center gap-4"
-                    >
-                      <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shrink-0">
+              </p>
+              <div className="native-group">
+                {section.items.map((note, i) => (
+                  <motion.div
+                    key={note.id}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    className="native-group-item"
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                      section.title === 'Past' ? 'bg-secondary' : 'bg-accent'
+                    }`}>
+                      {section.title === 'Past' ? (
+                        <CheckCircle className="w-5 h-5 text-muted-foreground" />
+                      ) : (
                         <Calendar className="w-5 h-5 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground text-sm truncate">{note.title}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {format(new Date(note.reminder_date!), 'EEE, MMM d, yyyy')}
-                        </p>
-                      </div>
-                      {note.is_recurring && (
-                        <div className="flex items-center gap-1 text-xs text-primary shrink-0">
-                          <Repeat className="w-3 h-3" />
-                          <span>{note.recurrence_type}</span>
-                        </div>
                       )}
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[15px] font-medium truncate ${
+                        section.title === 'Past' ? 'text-muted-foreground line-through' : 'text-foreground'
+                      }`}>
+                        {note.title}
+                      </p>
+                      <p className="text-[12px] text-muted-foreground mt-0.5">
+                        {format(new Date(note.reminder_date!), 'EEE, MMM d · h:mm a')}
+                      </p>
+                    </div>
+                    {note.is_recurring && (
+                      <div className="flex items-center gap-1 text-[11px] text-primary shrink-0">
+                        <Repeat className="w-3 h-3" />
+                        <span className="capitalize">{note.recurrence_type}</span>
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       )}

@@ -8,8 +8,8 @@ const AppLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <DesktopSidebar />
-      <main className="pb-20 lg:pb-0 lg:pl-64">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="pb-20 lg:pb-0 lg:pl-72">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-2xl lg:max-w-3xl">
           <Outlet />
         </div>
       </main>
