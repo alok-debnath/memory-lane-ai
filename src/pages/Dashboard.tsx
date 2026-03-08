@@ -122,6 +122,24 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Quick Actions (mobile access to new features) */}
+      <div className="grid grid-cols-3 gap-2 lg:hidden">
+        {[
+          { path: '/documents', icon: '📄', label: 'Documents' },
+          { path: '/review', icon: '🧠', label: 'Review' },
+          { path: '/graph', icon: '🕸️', label: 'Graph' },
+        ].map(item => (
+          <button
+            key={item.path}
+            onClick={() => navigate(item.path)}
+            className="native-card p-3 text-center active:scale-95 transition-transform"
+          >
+            <span className="text-xl">{item.icon}</span>
+            <p className="text-[11px] font-medium text-muted-foreground mt-1">{item.label}</p>
+          </button>
+        ))}
+      </div>
+
       {/* Daily Flashback */}
       <DailyFlashback />
 
