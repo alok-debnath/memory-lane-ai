@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import MemoryCard, { type MemoryNote } from '@/components/MemoryCard';
+import EditMemoryDialog from '@/components/EditMemoryDialog';
 import { Brain, Plus, Search, Bell, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +17,9 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [search, setSearch] = React.useState('');
+  const [search, setSearch] = useState('');
+  const [editNote, setEditNote] = useState<MemoryNote | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   const { data: notes = [], isLoading } = useQuery({
     queryKey: ['memory-notes'],
@@ -52,6 +55,11 @@ const Dashboard: React.FC = () => {
   );
 
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] || 'there';
+
+  const handleEdit = (note: MemoryNote) => {
+    setEditNote(note);
+    setEditOpen(true);
+  };
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -138,11 +146,19 @@ const Dashboard: React.FC = () => {
         <div className="space-y-3">
           <AnimatePresence>
             {filteredNotes.map((note, i) => (
-              <MemoryCard key={note.id} note={note} index={i} onDelete={(id) => deleteMutation.mutate(id)} />
+              <MemoryCard
+                key={note.id}
+                note={note}
+                index={i}
+                onDelete={(id) => deleteMutation.mutate(id)}
+                onEdit={handleEdit}
+              />
             ))}
           </AnimatePresence>
         </div>
       )}
+
+      <EditMemoryDialog note={editNote} open={editOpen} onOpenChange={setEditOpen} />
     </div>
   );
 };
