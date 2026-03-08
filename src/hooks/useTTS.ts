@@ -4,11 +4,17 @@ export function useTTS() {
   const [speaking, setSpeaking] = useState(false);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
+  const getSynth = () => {
+    if (typeof window === 'undefined') return null;
+    return window.speechSynthesis ?? null;
+  };
+
   const speak = useCallback((text: string) => {
-    if (!('speechSynthesis' in window)) return;
+    const synth = getSynth();
+    if (!synth) return;
 
     // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
+    synth.cancel();
 
     // Strip markdown formatting for cleaner speech
     const clean = text
@@ -23,7 +29,7 @@ export function useTTS() {
     utt.pitch = 1.0;
 
     // Try to pick a natural-sounding voice
-    const voices = window.speechSynthesis.getVoices();
+    const voices = synth.getVoices();
     const preferred = voices.find(
       (v) => v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Natural')
     );
@@ -34,11 +40,16 @@ export function useTTS() {
     utt.onerror = () => setSpeaking(false);
 
     utteranceRef.current = utt;
-    window.speechSynthesis.speak(utt);
+    synth.speak(utt);
   }, []);
 
   const stop = useCallback(() => {
-    window.speechSynthesis.cancel();
+    const synth = getSynth();
+    if (!synth) {
+      setSpeaking(false);
+      return;
+    }
+    synth.cancel();
     setSpeaking(false);
   }, []);
 
