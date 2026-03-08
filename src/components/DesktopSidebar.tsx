@@ -1,18 +1,20 @@
 import React from 'react';
-import { Home, Bell, User, Brain, LogOut, Clock, BarChart3, FileText, Network, RotateCcw } from 'lucide-react';
+import { Home, Bell, User, Brain, LogOut, Clock, BarChart3, FileText, Network, RotateCcw, Plus } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
 
-const navItems = [
+const mainNav = [
   { path: '/', icon: Home, label: 'Dashboard' },
   { path: '/timeline', icon: Clock, label: 'Timeline' },
   { path: '/reminders', icon: Bell, label: 'Reminders' },
+];
+
+const toolsNav = [
   { path: '/documents', icon: FileText, label: 'Documents' },
   { path: '/review', icon: RotateCcw, label: 'Review' },
-  { path: '/graph', icon: Network, label: 'Graph' },
-  { path: '/stats', icon: BarChart3, label: 'Stats' },
-  { path: '/profile', icon: User, label: 'Profile' },
+  { path: '/graph', icon: Network, label: 'Knowledge Graph' },
+  { path: '/stats', icon: BarChart3, label: 'Statistics' },
 ];
 
 const DesktopSidebar: React.FC = () => {
@@ -21,6 +23,23 @@ const DesktopSidebar: React.FC = () => {
   const { user, signOut } = useAuth();
 
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] || 'User';
+
+  const NavItem = ({ path, icon: Icon, label }: { path: string; icon: React.ElementType; label: string }) => {
+    const isActive = location.pathname === path;
+    return (
+      <button
+        onClick={() => navigate(path)}
+        className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150 ${
+          isActive
+            ? 'text-primary bg-accent'
+            : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60 active:bg-secondary'
+        }`}
+      >
+        <Icon className="w-[18px] h-[18px]" strokeWidth={isActive ? 2.2 : 1.8} />
+        <span>{label}</span>
+      </button>
+    );
+  };
 
   return (
     <aside className="hidden lg:flex flex-col w-72 h-screen bg-card border-r border-border/60 fixed left-0 top-0 z-30">
@@ -34,25 +53,30 @@ const DesktopSidebar: React.FC = () => {
 
       <div className="h-px bg-border/60 mx-4" />
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-3 space-y-0.5">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150 ${
-                isActive
-                  ? 'text-primary bg-accent'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60 active:bg-secondary'
-              }`}
-            >
-              <item.icon className="w-[18px] h-[18px]" strokeWidth={isActive ? 2.2 : 1.8} />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
+      {/* New Memory button */}
+      <div className="px-3 pt-3 pb-1">
+        <button
+          onClick={() => navigate('/record')}
+          className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all btn-gradient ${
+            location.pathname === '/record' ? 'ring-2 ring-primary/30' : ''
+          }`}
+        >
+          <Plus className="w-[18px] h-[18px]" strokeWidth={2.2} />
+          New Memory
+        </button>
+      </div>
+
+      {/* Main nav */}
+      <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
+        <p className="section-label mt-1">Navigate</p>
+        {mainNav.map((item) => (
+          <NavItem key={item.path} {...item} />
+        ))}
+
+        <p className="section-label mt-4">Tools</p>
+        {toolsNav.map((item) => (
+          <NavItem key={item.path} {...item} />
+        ))}
       </nav>
 
       <div className="h-px bg-border/60 mx-4" />
@@ -69,6 +93,14 @@ const DesktopSidebar: React.FC = () => {
           </div>
           <ThemeToggle />
         </div>
+
+        <button
+          onClick={() => navigate('/profile')}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+        >
+          <User className="w-4 h-4" />
+          Profile & Settings
+        </button>
 
         <button
           onClick={signOut}
