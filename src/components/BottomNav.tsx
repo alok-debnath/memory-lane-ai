@@ -1,8 +1,7 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Plus, FileText, RotateCcw, MoreHorizontal, Network, BarChart3, User, Bell, X } from 'lucide-react';
+import { Home, FileText, RotateCcw, MoreHorizontal, Network, BarChart3, User, Bell, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { NewMemoryContext } from './AppLayout';
 
 const primaryItems = [
   { path: '/', icon: Home, label: 'Home' },
@@ -27,7 +26,6 @@ const BottomNav: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [moreOpen, setMoreOpen] = useState(false);
-  const { open: openNewMemory } = useContext(NewMemoryContext);
 
   const isActive = (path: string) => location.pathname === path;
   const isMoreActive = moreItems.some(i => isActive(i.path));
@@ -108,21 +106,12 @@ const BottomNav: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Bottom bar */}
+      {/* Bottom bar - no center + button, FAB is in UnifiedCommandPanel */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden flex justify-center pointer-events-none pb-safe">
-        <div className="liquid-glass-bar pointer-events-auto mb-3 mx-auto px-1.5 py-1.5 flex items-center justify-around gap-0" style={{ width: 'min(90vw, 340px)' }}>
+        <div className="liquid-glass-bar pointer-events-auto mb-3 mx-auto px-1.5 py-1.5 flex items-center justify-around gap-0" style={{ width: 'min(90vw, 320px)' }}>
           {primaryItems.map(item => (
             <NavButton key={item.path} {...item} />
           ))}
-
-          {/* Center Record FAB */}
-          <button
-            onClick={openNewMemory}
-            className="relative flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground transition-all active:scale-90"
-            style={{ boxShadow: '0 4px 16px -2px hsl(36 85% 52% / 0.35)' }}
-          >
-            <Plus className="w-6 h-6" strokeWidth={2.5} />
-          </button>
 
           {rightItems.map(item => (
             <NavButton key={item.path} {...item} />
