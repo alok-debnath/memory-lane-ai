@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import MemoryCard, { type MemoryNote } from '@/components/MemoryCard';
 import EditMemoryDialog from '@/components/EditMemoryDialog';
-import { Brain, Plus, Search, Bell, Mic } from 'lucide-react';
+import { Brain, Plus, Search, Bell, Mic, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
@@ -20,6 +20,8 @@ const Dashboard: React.FC = () => {
   const [search, setSearch] = useState('');
   const [editNote, setEditNote] = useState<MemoryNote | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [semanticResults, setSemanticResults] = useState<MemoryNote[] | null>(null);
+  const [searching, setSearching] = useState(false);
 
   const { data: notes = [], isLoading } = useQuery({
     queryKey: ['memory-notes'],
@@ -44,11 +46,48 @@ const Dashboard: React.FC = () => {
     },
   });
 
-  const filteredNotes = notes.filter(
-    (n) =>
-      n.title.toLowerCase().includes(search.toLowerCase()) ||
-      n.content.toLowerCase().includes(search.toLowerCase())
-  );
+  const doSemanticSearch = useCallback(async (query: string) => {
+    if (!query.trim() || !user) {
+      setSemanticResults(null);
+      return;
+    }
+    setSearching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('semantic-search', {
+        body: { query, userId: user.id },
+      });
+      if (error) throw error;
+      setSemanticResults(data.results || []);
+    } catch {
+      // Fallback to text search
+      setSemanticResults(null);
+    } finally {
+      setSearching(false);
+    }
+  }, [user]);
+
+  // Debounced semantic search
+  const searchTimerRef = React.useRef<NodeJS.Timeout>();
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    clearTimeout(searchTimerRef.current);
+    if (value.trim().length >= 3) {
+      searchTimerRef.current = setTimeout(() => doSemanticSearch(value), 500);
+    } else {
+      setSemanticResults(null);
+    }
+  };
+
+  // Show semantic results if available, otherwise text filter
+  const displayNotes = semanticResults !== null
+    ? semanticResults
+    : search
+      ? notes.filter(
+          (n) =>
+            n.title.toLowerCase().includes(search.toLowerCase()) ||
+            n.content.toLowerCase().includes(search.toLowerCase())
+        )
+      : notes;
 
   const upcomingReminders = notes.filter(
     (n) => n.reminder_date && isAfter(new Date(n.reminder_date), new Date()) && isBefore(new Date(n.reminder_date), addDays(new Date(), 7))
@@ -105,17 +144,27 @@ const Dashboard: React.FC = () => {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search memories..."
+            placeholder="Search memories naturally..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-10 h-11 rounded-xl bg-secondary/50 border-border/50"
           />
+          {searching && (
+            <Sparkles className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary animate-pulse" />
+          )}
         </div>
         <Button variant="gradient" size="lg" onClick={() => navigate('/record')} className="shrink-0">
           <Plus className="w-5 h-5" />
           <span className="hidden sm:inline">New Memory</span>
         </Button>
       </motion.div>
+
+      {semanticResults !== null && search && (
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
+          <Sparkles className="w-3 h-3 text-primary" />
+          AI-powered search · {displayNotes.length} result{displayNotes.length !== 1 ? 's' : ''}
+        </p>
+      )}
 
       {isLoading ? (
         <div className="space-y-4">
@@ -126,14 +175,14 @@ const Dashboard: React.FC = () => {
             </div>
           ))}
         </div>
-      ) : filteredNotes.length === 0 ? (
+      ) : displayNotes.length === 0 ? (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
           <Brain className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
           <h3 className="font-display font-semibold text-foreground text-lg">
             {search ? 'No matching memories' : 'No memories yet'}
           </h3>
           <p className="text-muted-foreground mt-1 text-sm">
-            {search ? 'Try a different search term' : 'Tap the microphone to create your first memory'}
+            {search ? 'Try rephrasing your search' : 'Tap the microphone to create your first memory'}
           </p>
           {!search && (
             <Button variant="gradient" className="mt-6" onClick={() => navigate('/record')}>
@@ -145,7 +194,7 @@ const Dashboard: React.FC = () => {
       ) : (
         <div className="space-y-3">
           <AnimatePresence>
-            {filteredNotes.map((note, i) => (
+            {displayNotes.map((note, i) => (
               <MemoryCard
                 key={note.id}
                 note={note}
