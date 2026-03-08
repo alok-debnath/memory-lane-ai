@@ -50,11 +50,19 @@ const Record: React.FC = () => {
       if (data.embedding) {
         insertPayload.embedding = data.embedding;
       }
-      const { error: insertError } = await supabase.from('memory_notes').insert(insertPayload);
+      const { data: insertedRows, error: insertError } = await supabase
+        .from('memory_notes')
+        .insert(insertPayload)
+        .select('id, title')
+        .single();
 
       if (insertError) throw insertError;
 
       queryClient.invalidateQueries({ queryKey: ['memory-notes'] });
+
+      const savedId = insertedRows.id;
+      const savedTitle = insertedRows.title;
+      setLastSavedMemory({ id: savedId, title: savedTitle });
 
       // Show extracted actions feedback
       const actions = data.extracted_actions;
@@ -62,12 +70,20 @@ const Record: React.FC = () => {
         setLastActions(actions);
         toast({
           title: '✨ Memory saved!',
-          description: `${data.title} — ${actions.length} action${actions.length !== 1 ? 's' : ''} extracted`,
+          description: `${savedTitle} — ${actions.length} action${actions.length !== 1 ? 's' : ''} extracted`,
         });
       } else {
-        toast({ title: 'Memory saved!', description: data.title });
-        navigate('/');
+        toast({ title: 'Memory saved!', description: savedTitle });
       }
+
+      // Run conflict detection in background (non-blocking)
+      supabase.functions.invoke('detect-conflicts', {
+        body: { memoryId: savedId, content: data.content, title: savedTitle, userId: user!.id },
+      }).then(({ data: conflictData }) => {
+        if (conflictData?.conflicts?.length > 0) {
+          setConflicts(conflictData.conflicts);
+        }
+      }).catch(() => {}); // Silent fail for conflicts
 
       setTemplatePrefill(null);
       setCapsuleDate(null);
