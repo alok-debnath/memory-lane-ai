@@ -326,6 +326,14 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
                 {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Save className="w-4 h-4 mr-1.5" />}
                 Save
               </Button>
+
+              {/* Related memories */}
+              <RelatedMemories
+                note={note}
+                onSelect={(related) => {
+                  setEditNote(related as any);
+                }}
+              />
             </div>
           </TabsContent>
         </Tabs>

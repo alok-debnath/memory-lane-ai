@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Bell, Trash2, Tag, Pencil, Paperclip, ChevronRight } from 'lucide-react';
+import { Calendar, Bell, Trash2, Tag, Pencil, Paperclip, ChevronRight, Volume2, VolumeX } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
+import ShareMemory from '@/components/ShareMemory';
+import { useTTS } from '@/hooks/useTTS';
 
 export interface MemoryNote {
   id: string;
@@ -33,6 +35,7 @@ const categoryEmoji: Record<string, string> = {
 
 const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete, onEdit }) => {
   const [attachmentCount, setAttachmentCount] = useState(0);
+  const { speak, stop, speaking } = useTTS();
 
   useEffect(() => {
     supabase
@@ -41,6 +44,15 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete, onEdit }
       .eq('memory_id', note.id)
       .then(({ count }) => setAttachmentCount(count || 0));
   }, [note.id]);
+
+  const handleTTS = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (speaking) {
+      stop();
+    } else {
+      speak(`${note.title}. ${note.content}`);
+    }
+  }, [speaking, stop, speak, note.title, note.content]);
 
   return (
     <motion.div
@@ -85,7 +97,15 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete, onEdit }
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-center gap-0.5 shrink-0">
+        <button
+          onClick={handleTTS}
+          className="h-8 w-8 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-all"
+          title={speaking ? 'Stop reading' : 'Read aloud'}
+        >
+          {speaking ? <VolumeX className="w-4 h-4 text-primary" /> : <Volume2 className="w-4 h-4" />}
+        </button>
+        <ShareMemory memoryId={note.id} title={note.title} />
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(note.id); }}
           className="h-8 w-8 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
