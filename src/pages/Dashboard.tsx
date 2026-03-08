@@ -131,21 +131,18 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Quick Actions (mobile access to new features) */}
-      <div className="grid grid-cols-3 gap-2 lg:hidden">
+      {/* Quick Stats Row */}
+      <div className="grid grid-cols-3 gap-2">
         {[
-          { path: '/documents', icon: '📄', label: 'Documents' },
-          { path: '/review', icon: '🧠', label: 'Review' },
-          { path: '/graph', icon: '🕸️', label: 'Graph' },
+          { label: 'Memories', value: notes.length, emoji: '🧠' },
+          { label: 'Reminders', value: upcomingReminders.length, emoji: '⏰' },
+          { label: 'Categories', value: categories.length, emoji: '📂' },
         ].map(item => (
-          <button
-            key={item.path}
-            onClick={() => navigate(item.path)}
-            className="native-card p-3 text-center active:scale-95 transition-transform"
-          >
-            <span className="text-xl">{item.icon}</span>
-            <p className="text-[11px] font-medium text-muted-foreground mt-1">{item.label}</p>
-          </button>
+          <div key={item.label} className="native-card p-3 text-center">
+            <span className="text-lg">{item.emoji}</span>
+            <p className="text-lg font-bold text-foreground mt-0.5">{item.value}</p>
+            <p className="text-[10px] font-medium text-muted-foreground">{item.label}</p>
+          </div>
         ))}
       </div>
 
