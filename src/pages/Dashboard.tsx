@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import MemoryCard, { type MemoryNote } from '@/components/MemoryCard';
 import EditMemoryDialog from '@/components/EditMemoryDialog';
 import { Brain, Search, Bell, Mic, Sparkles, Plus } from 'lucide-react';
+import ExportMemories from '@/components/ExportMemories';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { isAfter, isBefore, addDays, format } from 'date-fns';
