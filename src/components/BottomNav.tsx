@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Home, Bell, User, Clock, Plus } from 'lucide-react';
+import { Home, Bell, User, Clock, Mic } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const navItems = [
@@ -15,30 +15,34 @@ const BottomNav: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card/80 backdrop-blur-xl border-t border-border/50 px-2 pb-safe lg:hidden">
-      <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className="relative flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-colors"
-            >
-              {isActive && (
-                <motion.div
-                  layoutId="nav-pill"
-                  className="absolute inset-0 bg-accent rounded-xl"
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+    <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden">
+      <div className="bg-card/85 backdrop-blur-2xl border-t border-border/40">
+        <div className="flex items-center justify-around h-[52px] max-w-md mx-auto pb-safe">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className="relative flex flex-col items-center justify-center gap-0.5 w-16 h-full touch-item"
+              >
+                <item.icon
+                  className={`w-[22px] h-[22px] transition-colors duration-200 ${
+                    isActive ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                  strokeWidth={isActive ? 2.2 : 1.8}
                 />
-              )}
-              <item.icon className={`w-5 h-5 relative z-10 transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
-              <span className={`text-[10px] font-medium relative z-10 transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
-                {item.label}
-              </span>
-            </button>
-          );
-        })}
+                <span
+                  className={`text-[10px] font-medium transition-colors duration-200 ${
+                    isActive ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );

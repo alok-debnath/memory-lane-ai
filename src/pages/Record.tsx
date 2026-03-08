@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import VoiceRecorder from '@/components/VoiceRecorder';
 import TextNoteInput from '@/components/TextNoteInput';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { Mic, PenLine } from 'lucide-react';
+import { Mic, PenLine, Lightbulb } from 'lucide-react';
 
 const Record: React.FC = () => {
   const [mode, setMode] = useState<'voice' | 'text'>('voice');
@@ -54,19 +54,14 @@ const Record: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">New Memory</h1>
-        <p className="text-muted-foreground mt-1">Speak or type your memory and AI will organize it</p>
-      </motion.div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-display font-bold text-foreground tracking-tight">New Memory</h1>
+        <p className="text-[13px] text-muted-foreground mt-0.5">Speak or type — AI will organize it</p>
+      </div>
 
       {/* Mode Toggle */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="flex gap-2 bg-secondary/50 rounded-xl p-1 max-w-xs mx-auto sm:mx-0"
-      >
+      <div className="native-card p-1 max-w-xs mx-auto sm:mx-0 flex">
         {[
           { key: 'voice' as const, icon: Mic, label: 'Voice' },
           { key: 'text' as const, icon: PenLine, label: 'Type' },
@@ -74,14 +69,14 @@ const Record: React.FC = () => {
           <button
             key={m.key}
             onClick={() => setMode(m.key)}
-            className={`relative flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            className={`relative flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-medium transition-all ${
               mode === m.key ? 'text-foreground' : 'text-muted-foreground'
             }`}
           >
             {mode === m.key && (
               <motion.div
                 layoutId="mode-pill"
-                className="absolute inset-0 bg-card rounded-lg shadow-sm"
+                className="absolute inset-0 bg-accent rounded-xl"
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               />
             )}
@@ -89,15 +84,10 @@ const Record: React.FC = () => {
             <span className="relative z-10">{m.label}</span>
           </button>
         ))}
-      </motion.div>
+      </div>
 
       {/* Input Area */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="flex items-center justify-center min-h-[300px]"
-      >
+      <div className="flex items-center justify-center min-h-[280px]">
         {mode === 'voice' ? (
           <VoiceRecorder
             onTranscriptionComplete={(text) => processNote(text, false)}
@@ -111,22 +101,20 @@ const Record: React.FC = () => {
             />
           </div>
         )}
-      </motion.div>
+      </div>
 
       {/* Tips */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 }}
-        className="glass-card p-4 sm:p-5"
-      >
-        <h3 className="font-display font-semibold text-foreground text-sm mb-3">💡 Tips</h3>
-        <ul className="space-y-2 text-sm text-muted-foreground">
-          <li>• Say "Remind me to renew my passport on March 15 every year"</li>
-          <li>• Say "Remember to buy flowers for mom's birthday on June 3rd"</li>
-          <li>• Say "Note: The WiFi password for the office is starlight42"</li>
+      <div className="native-card p-4">
+        <div className="flex items-center gap-2 mb-2.5">
+          <Lightbulb className="w-4 h-4 text-primary" />
+          <span className="text-[13px] font-semibold text-foreground">Tips</span>
+        </div>
+        <ul className="space-y-1.5 text-[13px] text-muted-foreground">
+          <li>• "Remind me to renew my passport on March 15 every year"</li>
+          <li>• "Remember to buy flowers for mom's birthday June 3rd"</li>
+          <li>• "Note: WiFi password for the office is starlight42"</li>
         </ul>
-      </motion.div>
+      </div>
     </div>
   );
 };

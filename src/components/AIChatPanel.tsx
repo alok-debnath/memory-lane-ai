@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mic, Square, X, Send, Loader2, Bot, User,
-  Keyboard, Brain, ArrowDown, Volume2, VolumeX,
+  Keyboard, Brain, ArrowRight, Volume2, VolumeX,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,12 +17,12 @@ interface Message {
 }
 
 const VoiceWaveform: React.FC = () => (
-  <div className="flex items-center justify-center gap-[3px] h-8">
+  <div className="flex items-center justify-center gap-[3px] h-6">
     {[...Array(5)].map((_, i) => (
       <motion.div
         key={i}
-        className="w-[3px] rounded-full bg-primary"
-        animate={{ height: [8, 20 + Math.random() * 12, 8] }}
+        className="w-[2.5px] rounded-full bg-primary"
+        animate={{ height: [6, 16 + Math.random() * 10, 6] }}
         transition={{ repeat: Infinity, duration: 0.6 + Math.random() * 0.4, delay: i * 0.08, ease: 'easeInOut' }}
       />
     ))}
@@ -68,13 +68,9 @@ const AIChatPanel: React.FC = () => {
     localStorage.setItem('memora-tts', ttsEnabled ? 'true' : 'false');
   }, [ttsEnabled]);
 
-  // Keyboard shortcut: Escape to close
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && open) {
-        setOpen(false);
-        stop();
-      }
+      if (e.key === 'Escape' && open) { setOpen(false); stop(); }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -97,8 +93,7 @@ const AIChatPanel: React.FC = () => {
           if (data.mutated) queryClient.invalidateQueries({ queryKey: ['memory-notes'] });
           if (ttsEnabled && !data.error) speak(reply);
         } catch (err: any) {
-          const errMsg = `Something went wrong. ${err.message}`;
-          setMessages((p) => [...p, { role: 'assistant', content: errMsg }]);
+          setMessages((p) => [...p, { role: 'assistant', content: `Something went wrong. ${err.message}` }]);
         } finally {
           setLoading(false);
         }
@@ -112,24 +107,14 @@ const AIChatPanel: React.FC = () => {
     stop();
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) {
-      toast({
-        title: 'Not supported',
-        description: 'Speech recognition requires Chrome, Edge, or Safari.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Not supported', description: 'Use Chrome, Edge, or Safari.', variant: 'destructive' });
       return;
     }
-
-    // Request microphone permission
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach(track => track.stop());
     } catch {
-      toast({
-        title: 'Microphone access denied',
-        description: 'Please allow microphone access in your browser settings.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Microphone denied', description: 'Allow mic access in browser settings.', variant: 'destructive' });
       return;
     }
 
@@ -151,17 +136,8 @@ const AIChatPanel: React.FC = () => {
       setLiveTranscript(fin || int);
     };
     recognition.onerror = (e: any) => {
-      console.error('Speech recognition error:', e.error);
-      setIsListening(false);
-      setLiveTranscript('');
+      setIsListening(false); setLiveTranscript('');
       if (intervalRef.current) clearInterval(intervalRef.current);
-      if (e.error === 'not-allowed') {
-        toast({
-          title: 'Microphone blocked',
-          description: 'Enable microphone access in browser settings.',
-          variant: 'destructive',
-        });
-      }
     };
     recognition.onend = () => {
       setIsListening(false);
@@ -170,19 +146,13 @@ const AIChatPanel: React.FC = () => {
       setLiveTranscript('');
       if (t) sendToAI(t);
     };
-
     try {
       recognition.start();
       setIsListening(true);
       setDuration(0);
       intervalRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
-    } catch (err) {
-      console.error('Failed to start recognition:', err);
-      toast({
-        title: 'Error',
-        description: 'Failed to start voice recognition. Please try again.',
-        variant: 'destructive',
-      });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to start voice.', variant: 'destructive' });
     }
   }, [sendToAI, stop, toast]);
 
@@ -195,7 +165,6 @@ const AIChatPanel: React.FC = () => {
   const suggestions = [
     "Remember my WiFi password is starlight42",
     "What did I save about my passport?",
-    "Change my dentist note to next Friday",
     "Show all my work memories",
   ];
 
@@ -204,266 +173,251 @@ const AIChatPanel: React.FC = () => {
       {/* FAB */}
       <AnimatePresence>
         {!open && (
-          <motion.div
-            initial={{ scale: 0, rotate: -90 }}
-            animate={{ scale: 1, rotate: 0 }}
-            exit={{ scale: 0, rotate: 90 }}
+          <motion.button
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-            className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-50"
+            onClick={() => setOpen(true)}
+            className="fixed bottom-[72px] right-4 sm:bottom-6 sm:right-6 z-50 h-14 w-14 rounded-full btn-gradient flex items-center justify-center lg:bottom-6"
           >
-            <button
-              onClick={() => setOpen(true)}
-              className="group relative h-[60px] w-[60px] rounded-full flex items-center justify-center overflow-hidden"
-            >
-              <div className="absolute inset-0 btn-gradient rounded-full" />
-              <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle,hsl(var(--primary)/0.4)_0%,transparent_70%)] blur-lg scale-150" />
-              <Mic className="w-6 h-6 text-primary-foreground relative z-10" />
-            </button>
-          </motion.div>
+            <Mic className="w-6 h-6 text-primary-foreground" />
+          </motion.button>
         )}
       </AnimatePresence>
 
       {/* Panel */}
       <AnimatePresence>
         {open && (
-          <motion.div
-            initial={{ opacity: 0, y: 40, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 40, scale: 0.9 }}
-            transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-            className="fixed bottom-20 right-3 sm:bottom-6 sm:right-6 z-50 
-              w-[calc(100vw-1.5rem)] sm:w-[440px] h-[calc(100vh-8rem)] sm:h-[640px] max-h-[640px]
-              lg:w-[480px] lg:h-[700px] lg:max-h-[700px]
-              rounded-3xl border border-border/40 bg-card/90 backdrop-blur-2xl shadow-2xl
-              flex flex-col overflow-hidden"
-            style={{ boxShadow: '0 25px 60px -12px hsl(220 25% 10% / 0.25), 0 0 0 1px hsl(var(--border) / 0.3)' }}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/10">
-                    <Brain className="w-5 h-5 text-primary" />
-                  </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-card" />
-                </div>
-                <div>
-                  <h3 className="font-display font-bold text-foreground text-[15px] leading-tight">Memora</h3>
-                  <p className="text-[11px] text-muted-foreground leading-tight">Voice-first AI assistant</p>
-                </div>
+          <>
+            {/* Backdrop on mobile */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-background/40 backdrop-blur-sm sm:hidden"
+              onClick={() => { setOpen(false); stop(); }}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 60 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 60 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              className="fixed z-50
+                inset-x-0 bottom-0 sm:inset-auto sm:bottom-6 sm:right-6
+                w-full sm:w-[420px] lg:w-[460px]
+                h-[85vh] sm:h-[620px] lg:h-[680px]
+                sm:rounded-2xl rounded-t-2xl
+                bg-card border border-border/50 sm:border
+                flex flex-col overflow-hidden"
+              style={{ boxShadow: 'var(--shadow-lg)' }}
+            >
+              {/* Handle (mobile) */}
+              <div className="flex justify-center pt-2 pb-0 sm:hidden">
+                <div className="w-9 h-1 rounded-full bg-border" />
               </div>
-              <div className="flex items-center gap-0.5">
-                <button
-                  onClick={() => { setTtsEnabled((v) => !v); if (speaking) stop(); }}
-                  className={`h-9 w-9 rounded-xl flex items-center justify-center transition-all ${
-                    ttsEnabled ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
-                  }`}
-                  title={ttsEnabled ? 'Auto-speak on' : 'Auto-speak off'}
-                >
-                  {ttsEnabled ? <Volume2 className="w-[18px] h-[18px]" /> : <VolumeX className="w-[18px] h-[18px]" />}
-                </button>
-                <button
-                  onClick={() => setMode(mode === 'voice' ? 'text' : 'voice')}
-                  className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all"
-                >
-                  {mode === 'voice' ? <Keyboard className="w-[18px] h-[18px]" /> : <Mic className="w-[18px] h-[18px]" />}
-                </button>
-                <button
-                  onClick={() => { setOpen(false); stop(); }}
-                  className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all"
-                >
-                  <X className="w-[18px] h-[18px]" />
-                </button>
-              </div>
-            </div>
 
-            <div className="h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
-
-            {/* Messages */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4 scroll-smooth">
-              {messages.length === 0 && !isListening && (
-                <motion.div
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15 }}
-                  className="flex flex-col items-center pt-4"
-                >
-                  <div className="relative mb-6">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center border border-primary/10">
-                      <Mic className="w-9 h-9 text-primary/70" />
-                    </div>
-                    <motion.div
-                      className="absolute inset-0 rounded-full border border-primary/20"
-                      animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0, 0.4] }}
-                      transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
-                    />
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Brain className="w-4 h-4 text-primary" />
                   </div>
-                  <h4 className="font-display font-bold text-foreground text-base mb-1">Hey, what's on your mind?</h4>
-                  <p className="text-[13px] text-muted-foreground text-center max-w-[260px] mb-6 leading-relaxed">
-                    Speak or type to create, find, edit or remove any memory
-                  </p>
-                  <div className="w-full space-y-1.5">
-                    {suggestions.map((q) => (
-                      <button
-                        key={q}
-                        onClick={() => sendToAI(q)}
-                        className="group/s flex items-center w-full text-left text-[13px] px-4 py-2.5 rounded-2xl 
-                          bg-secondary/30 text-muted-foreground 
-                          hover:bg-secondary/60 hover:text-foreground 
-                          transition-all duration-200 border border-transparent hover:border-border/30"
-                      >
-                        <span className="flex-1 truncate">"{q}"</span>
-                        <ArrowDown className="w-3.5 h-3.5 rotate-[-90deg] opacity-0 group-hover/s:opacity-60 transition-opacity shrink-0 ml-2" />
-                      </button>
-                    ))}
+                  <div>
+                    <h3 className="text-[14px] font-semibold text-foreground leading-tight">Memora AI</h3>
+                    <p className="text-[10px] text-muted-foreground leading-tight">Always listening</p>
                   </div>
-                </motion.div>
-              )}
-
-              {messages.map((msg, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25 }}
-                  className={`flex gap-2.5 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  {msg.role === 'assistant' && (
-                    <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center shrink-0 mt-0.5 border border-primary/10">
-                      <Bot className="w-3.5 h-3.5 text-primary" />
-                    </div>
-                  )}
-                  <div
-                    className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed ${
-                      msg.role === 'user'
-                        ? 'bg-primary text-primary-foreground rounded-br-lg'
-                        : 'bg-secondary/50 text-foreground rounded-bl-lg border border-border/20'
+                </div>
+                <div className="flex items-center gap-0.5">
+                  <button
+                    onClick={() => { setTtsEnabled((v) => !v); if (speaking) stop(); }}
+                    className={`h-8 w-8 rounded-lg flex items-center justify-center transition-all ${
+                      ttsEnabled ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:bg-secondary'
                     }`}
                   >
-                    {msg.role === 'assistant' ? (
-                      <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>p:not(:last-child)]:mb-2 [&>ul]:my-1.5 [&>ol]:my-1.5 [&>li]:text-[13px]">
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
-                      </div>
-                    ) : (
-                      msg.content
-                    )}
-                    {msg.role === 'assistant' && ttsEnabled && (
-                      <button
-                        onClick={() => speaking ? stop() : speak(msg.content)}
-                        className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        {speaking ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
-                        {speaking ? 'Stop' : 'Listen'}
-                      </button>
-                    )}
-                  </div>
-                  {msg.role === 'user' && (
-                    <div className="w-7 h-7 rounded-xl bg-secondary/60 flex items-center justify-center shrink-0 mt-0.5 border border-border/20">
-                      <User className="w-3.5 h-3.5 text-muted-foreground" />
+                    {ttsEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                  </button>
+                  <button
+                    onClick={() => setMode(mode === 'voice' ? 'text' : 'voice')}
+                    className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-secondary transition-all"
+                  >
+                    {mode === 'voice' ? <Keyboard className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  </button>
+                  <button
+                    onClick={() => { setOpen(false); stop(); }}
+                    className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-secondary transition-all"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="h-px bg-border/50" />
+
+              {/* Messages */}
+              <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+                {messages.length === 0 && !isListening && (
+                  <div className="flex flex-col items-center pt-8">
+                    <div className="w-16 h-16 rounded-2xl bg-primary/8 flex items-center justify-center mb-4">
+                      <Mic className="w-7 h-7 text-primary/60" />
                     </div>
-                  )}
-                </motion.div>
-              ))}
-
-              {isListening && liveTranscript && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-2.5 justify-end">
-                  <div className="max-w-[78%] rounded-2xl rounded-br-lg px-4 py-2.5 text-[13px] bg-primary/15 text-foreground/80 italic border border-primary/10">
-                    {liveTranscript}
-                  </div>
-                </motion.div>
-              )}
-
-              {loading && (
-                <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex gap-2.5">
-                  <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center shrink-0 border border-primary/10">
-                    <Bot className="w-3.5 h-3.5 text-primary" />
-                  </div>
-                  <div className="bg-secondary/50 rounded-2xl rounded-bl-lg px-5 py-3 border border-border/20">
-                    <div className="flex gap-1.5 items-center">
-                      {[0, 1, 2].map((i) => (
-                        <motion.span
-                          key={i}
-                          className="w-[6px] h-[6px] rounded-full bg-primary/50"
-                          animate={{ y: [0, -6, 0] }}
-                          transition={{ repeat: Infinity, duration: 0.7, delay: i * 0.15, ease: 'easeInOut' }}
-                        />
+                    <h4 className="text-[15px] font-semibold text-foreground mb-1">What's on your mind?</h4>
+                    <p className="text-[12px] text-muted-foreground text-center max-w-[240px] mb-5">
+                      Create, find, edit or remove any memory
+                    </p>
+                    <div className="w-full space-y-1">
+                      {suggestions.map((q) => (
+                        <button
+                          key={q}
+                          onClick={() => sendToAI(q)}
+                          className="flex items-center w-full text-left text-[13px] px-3.5 py-2.5 rounded-xl
+                            bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground
+                            transition-all active:scale-[0.98]"
+                        >
+                          <span className="flex-1 truncate">"{q}"</span>
+                          <ArrowRight className="w-3.5 h-3.5 opacity-40 shrink-0 ml-2" />
+                        </button>
                       ))}
                     </div>
                   </div>
-                </motion.div>
-              )}
-            </div>
+                )}
 
-            <div className="h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
-
-            {/* Input */}
-            <div className="px-4 py-3">
-              {mode === 'voice' ? (
-                <div className="flex flex-col items-center gap-2 py-1">
-                  <AnimatePresence mode="wait">
-                    {loading ? (
-                      <motion.div key="proc" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className="flex flex-col items-center gap-2">
-                        <div className="w-[52px] h-[52px] rounded-full bg-primary/10 flex items-center justify-center border border-primary/10">
-                          <Loader2 className="w-6 h-6 text-primary animate-spin" />
-                        </div>
-                        <span className="text-[11px] text-muted-foreground font-medium">Thinking...</span>
-                      </motion.div>
-                    ) : isListening ? (
-                      <motion.div key="listen" initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="flex flex-col items-center gap-2">
-                        <div className="relative">
-                          <motion.div
-                            className="absolute inset-0 rounded-full bg-destructive/20"
-                            animate={{ scale: [1, 1.4], opacity: [0.5, 0] }}
-                            transition={{ repeat: Infinity, duration: 1.2, ease: 'easeOut' }}
-                          />
-                          <button onClick={stopListening} className="relative w-[52px] h-[52px] rounded-full bg-destructive flex items-center justify-center cursor-pointer z-10">
-                            <Square className="w-5 h-5 text-destructive-foreground" />
-                          </button>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <VoiceWaveform />
-                          <span className="text-[11px] text-muted-foreground font-mono font-medium">{fmtDur(duration)}</span>
-                        </div>
-                      </motion.div>
-                    ) : (
-                      <motion.div key="idle" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className="flex flex-col items-center gap-2">
-                        <motion.button
-                          whileHover={{ scale: 1.06 }}
-                          whileTap={{ scale: 0.94 }}
-                          onClick={startListening}
-                          className="w-[52px] h-[52px] rounded-full btn-gradient flex items-center justify-center cursor-pointer shadow-lg"
-                          style={{ boxShadow: 'var(--shadow-soft)' }}
-                        >
-                          <Mic className="w-6 h-6 text-primary-foreground" />
-                        </motion.button>
-                        <span className="text-[11px] text-muted-foreground">Tap to speak</span>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              ) : (
-                <div className="flex gap-2 items-center">
-                  <input
-                    ref={inputRef}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && sendToAI(input)}
-                    placeholder="Type a message..."
-                    disabled={loading}
-                    className="flex-1 h-11 rounded-2xl bg-secondary/40 border border-border/30 px-4 text-[13px] text-foreground placeholder:text-muted-foreground/60 
-                      focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all disabled:opacity-50"
-                  />
-                  <button
-                    onClick={() => sendToAI(input)}
-                    disabled={!input.trim() || loading}
-                    className="h-11 w-11 shrink-0 rounded-2xl btn-gradient flex items-center justify-center disabled:opacity-40 transition-opacity"
+                {messages.map((msg, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin text-primary-foreground" /> : <Send className="w-4 h-4 text-primary-foreground" />}
-                  </button>
-                </div>
-              )}
-            </div>
-          </motion.div>
+                    {msg.role === 'assistant' && (
+                      <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                        <Bot className="w-3 h-3 text-primary" />
+                      </div>
+                    )}
+                    <div
+                      className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed ${
+                        msg.role === 'user'
+                          ? 'bg-primary text-primary-foreground rounded-br-md'
+                          : 'bg-secondary/60 text-foreground rounded-bl-md'
+                      }`}
+                    >
+                      {msg.role === 'assistant' ? (
+                        <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>p:not(:last-child)]:mb-1.5 [&>ul]:my-1 [&>ol]:my-1 [&>li]:text-[13px]">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                      ) : msg.content}
+                      {msg.role === 'assistant' && ttsEnabled && (
+                        <button
+                          onClick={() => speaking ? stop() : speak(msg.content)}
+                          className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          {speaking ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+                          {speaking ? 'Stop' : 'Listen'}
+                        </button>
+                      )}
+                    </div>
+                    {msg.role === 'user' && (
+                      <div className="w-6 h-6 rounded-lg bg-secondary flex items-center justify-center shrink-0 mt-0.5">
+                        <User className="w-3 h-3 text-muted-foreground" />
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+
+                {isListening && liveTranscript && (
+                  <div className="flex gap-2 justify-end">
+                    <div className="max-w-[80%] rounded-2xl rounded-br-md px-3.5 py-2.5 text-[13px] bg-primary/10 text-foreground/70 italic">
+                      {liveTranscript}
+                    </div>
+                  </div>
+                )}
+
+                {loading && (
+                  <div className="flex gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Bot className="w-3 h-3 text-primary" />
+                    </div>
+                    <div className="bg-secondary/60 rounded-2xl rounded-bl-md px-4 py-3">
+                      <div className="flex gap-1 items-center">
+                        {[0, 1, 2].map((i) => (
+                          <motion.span
+                            key={i}
+                            className="w-1.5 h-1.5 rounded-full bg-primary/40"
+                            animate={{ y: [0, -4, 0] }}
+                            transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.12 }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="h-px bg-border/50" />
+
+              {/* Input */}
+              <div className="px-3 py-2.5 pb-safe">
+                {mode === 'voice' ? (
+                  <div className="flex flex-col items-center gap-1.5 py-1">
+                    <AnimatePresence mode="wait">
+                      {loading ? (
+                        <motion.div key="proc" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className="flex flex-col items-center gap-1.5">
+                          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                          </div>
+                          <span className="text-[11px] text-muted-foreground">Thinking...</span>
+                        </motion.div>
+                      ) : isListening ? (
+                        <motion.div key="listen" initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="flex flex-col items-center gap-1.5">
+                          <motion.button
+                            onClick={stopListening}
+                            className="relative w-12 h-12 rounded-full bg-destructive flex items-center justify-center"
+                          >
+                            <Square className="w-4 h-4 text-destructive-foreground" />
+                          </motion.button>
+                          <div className="flex items-center gap-2">
+                            <VoiceWaveform />
+                            <span className="text-[11px] text-muted-foreground font-mono">{fmtDur(duration)}</span>
+                          </div>
+                        </motion.div>
+                      ) : (
+                        <motion.div key="idle" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className="flex flex-col items-center gap-1.5">
+                          <motion.button
+                            whileTap={{ scale: 0.92 }}
+                            onClick={startListening}
+                            className="w-12 h-12 rounded-full btn-gradient flex items-center justify-center"
+                          >
+                            <Mic className="w-5 h-5 text-primary-foreground" />
+                          </motion.button>
+                          <span className="text-[11px] text-muted-foreground">Tap to speak</span>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 items-center">
+                    <input
+                      ref={inputRef}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && sendToAI(input)}
+                      placeholder="Type a message..."
+                      disabled={loading}
+                      className="flex-1 h-10 rounded-xl bg-secondary/50 border-0 px-3.5 text-[13px] text-foreground placeholder:text-muted-foreground/50
+                        focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all disabled:opacity-50"
+                    />
+                    <button
+                      onClick={() => sendToAI(input)}
+                      disabled={!input.trim() || loading}
+                      className="h-10 w-10 shrink-0 rounded-xl btn-gradient flex items-center justify-center disabled:opacity-40"
+                    >
+                      {loading ? <Loader2 className="w-4 h-4 animate-spin text-primary-foreground" /> : <Send className="w-4 h-4 text-primary-foreground" />}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </>

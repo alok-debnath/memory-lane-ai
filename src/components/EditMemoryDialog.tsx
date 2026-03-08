@@ -34,13 +34,8 @@ interface EditMemoryDialogProps {
 
 const categories = ['personal', 'work', 'finance', 'health', 'other'];
 const recurrenceTypes = ['daily', 'weekly', 'monthly', 'yearly'];
-
 const categoryEmoji: Record<string, string> = {
-  personal: '🏠',
-  work: '💼',
-  finance: '💰',
-  health: '💊',
-  other: '📝',
+  personal: '🏠', work: '💼', finance: '💰', health: '💊', other: '📝',
 };
 
 const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenChange }) => {
@@ -112,12 +107,20 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
     }
   };
 
-  const startVoiceEdit = useCallback(() => {
+  const startVoiceEdit = useCallback(async () => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) {
-      toast({ title: 'Not supported', description: 'Use Chrome or Edge for voice editing', variant: 'destructive' });
+      toast({ title: 'Not supported', description: 'Use Chrome or Edge', variant: 'destructive' });
       return;
     }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
+    } catch {
+      toast({ title: 'Microphone denied', description: 'Allow mic access.', variant: 'destructive' });
+      return;
+    }
+
     const recognition = new SR();
     recognition.continuous = false;
     recognition.interimResults = true;
@@ -179,106 +182,73 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto p-0 gap-0 rounded-3xl border-border/40">
-        {/* Header with gradient accent */}
-        <div className="relative px-6 pt-6 pb-4">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary/60 via-primary to-primary/60 rounded-t-3xl" />
+      <DialogContent className="sm:max-w-[480px] max-h-[85vh] overflow-y-auto p-0 gap-0 rounded-t-2xl sm:rounded-2xl border-border/50">
+        {/* Header */}
+        <div className="px-5 pt-5 pb-3">
           <DialogHeader>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center border border-primary/10 text-lg">
+              <div className="w-10 h-10 rounded-xl bg-accent/80 flex items-center justify-center text-lg">
                 {categoryEmoji[note.category || 'other']}
               </div>
               <div>
-                <DialogTitle className="font-display text-lg leading-tight">{note.title}</DialogTitle>
-                <p className="text-[12px] text-muted-foreground mt-0.5 capitalize">{note.category || 'other'} memory</p>
+                <DialogTitle className="text-[16px] font-display leading-tight">{note.title}</DialogTitle>
+                <p className="text-[11px] text-muted-foreground mt-0.5 capitalize">{note.category || 'other'}</p>
               </div>
             </div>
           </DialogHeader>
         </div>
 
-        <div className="h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
+        <div className="h-px bg-border/50" />
 
-        <Tabs defaultValue="voice" className="w-full">
-          <div className="px-6 pt-4">
-            <TabsList className="w-full h-11 rounded-2xl bg-secondary/40 p-1 border border-border/20">
-              <TabsTrigger value="voice" className="flex-1 rounded-xl text-[13px] font-medium gap-1.5 data-[state=active]:bg-card data-[state=active]:shadow-sm">
-                <Volume2 className="w-3.5 h-3.5" />
-                Voice Edit
+        <Tabs defaultValue="manual" className="w-full">
+          <div className="px-5 pt-3">
+            <TabsList className="w-full h-10 rounded-xl bg-secondary/50 p-0.5">
+              <TabsTrigger value="voice" className="flex-1 rounded-lg text-[13px] font-medium gap-1.5 data-[state=active]:bg-card data-[state=active]:shadow-sm h-full">
+                <Mic className="w-3.5 h-3.5" />
+                Voice
               </TabsTrigger>
-              <TabsTrigger value="manual" className="flex-1 rounded-xl text-[13px] font-medium gap-1.5 data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              <TabsTrigger value="manual" className="flex-1 rounded-lg text-[13px] font-medium gap-1.5 data-[state=active]:bg-card data-[state=active]:shadow-sm h-full">
                 <Pencil className="w-3.5 h-3.5" />
-                Manual Edit
+                Manual
               </TabsTrigger>
             </TabsList>
           </div>
 
-          {/* Voice Tab */}
-          <TabsContent value="voice" className="px-6 pb-6 pt-4 mt-0">
-            <div className="flex flex-col items-center py-6">
+          <TabsContent value="voice" className="px-5 pb-5 pt-4 mt-0">
+            <div className="flex flex-col items-center py-4">
               <AnimatePresence mode="wait">
                 {voiceProcessing ? (
-                  <motion.div
-                    key="processing"
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.8, opacity: 0 }}
-                    className="flex flex-col items-center gap-3"
-                  >
-                    <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center border border-primary/10">
-                      <Sparkles className="w-8 h-8 text-primary animate-pulse" />
+                  <motion.div key="processing" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className="flex flex-col items-center gap-3">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Sparkles className="w-7 h-7 text-primary animate-pulse" />
                     </div>
-                    <p className="text-sm text-muted-foreground font-medium">Applying your edits...</p>
+                    <p className="text-[13px] text-muted-foreground">Applying edits...</p>
                   </motion.div>
                 ) : voiceEditing ? (
-                  <motion.div
-                    key="listening"
-                    initial={{ scale: 0.8 }}
-                    animate={{ scale: 1 }}
-                    className="flex flex-col items-center gap-3"
-                  >
-                    <div className="relative">
-                      <motion.div
-                        className="absolute inset-0 rounded-full bg-destructive/20"
-                        animate={{ scale: [1, 1.5], opacity: [0.4, 0] }}
-                        transition={{ repeat: Infinity, duration: 1.2, ease: 'easeOut' }}
-                      />
-                      <button
-                        onClick={stopVoiceEdit}
-                        className="relative w-20 h-20 rounded-full bg-destructive flex items-center justify-center cursor-pointer z-10 shadow-lg"
-                      >
-                        <Square className="w-6 h-6 text-destructive-foreground" />
-                      </button>
-                    </div>
-                    <p className="text-sm text-muted-foreground font-medium">Listening... tap to send</p>
+                  <motion.div key="listening" initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="flex flex-col items-center gap-3">
+                    <motion.button onClick={stopVoiceEdit} className="w-16 h-16 rounded-full bg-destructive flex items-center justify-center">
+                      <Square className="w-5 h-5 text-destructive-foreground" />
+                    </motion.button>
+                    <p className="text-[13px] text-muted-foreground">Listening...</p>
                     {liveVoice && (
-                      <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-[13px] text-foreground/70 italic text-center max-w-[280px] bg-secondary/30 rounded-2xl px-4 py-2 border border-border/20"
-                      >
+                      <p className="text-[13px] text-foreground/70 italic text-center max-w-[260px] bg-secondary/40 rounded-xl px-3 py-2">
                         "{liveVoice}"
-                      </motion.p>
+                      </p>
                     )}
                   </motion.div>
                 ) : (
-                  <motion.div
-                    key="idle"
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="flex flex-col items-center gap-3"
-                  >
+                  <motion.div key="idle" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col items-center gap-3">
                     <motion.button
-                      whileHover={{ scale: 1.06 }}
-                      whileTap={{ scale: 0.94 }}
+                      whileTap={{ scale: 0.92 }}
                       onClick={startVoiceEdit}
-                      className="w-20 h-20 rounded-full btn-gradient flex items-center justify-center cursor-pointer shadow-lg"
+                      className="w-16 h-16 rounded-full btn-gradient flex items-center justify-center"
                     >
-                      <Mic className="w-8 h-8 text-primary-foreground" />
+                      <Mic className="w-7 h-7 text-primary-foreground" />
                     </motion.button>
                     <div className="text-center">
-                      <p className="text-sm font-medium text-foreground">Tap to describe your edit</p>
-                      <p className="text-[12px] text-muted-foreground mt-1 max-w-[260px] leading-relaxed">
-                        e.g. "Change the title to grocery list" or "Add a reminder for next Monday"
+                      <p className="text-[13px] font-medium text-foreground">Tap to describe your edit</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 max-w-[240px]">
+                        e.g. "Change the title" or "Add a reminder"
                       </p>
                     </div>
                   </motion.div>
@@ -287,29 +257,23 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
             </div>
           </TabsContent>
 
-          {/* Manual Tab */}
-          <TabsContent value="manual" className="px-6 pb-6 pt-4 mt-0">
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="title" className="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">Title</Label>
-                <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} className="h-11 rounded-xl" />
+          <TabsContent value="manual" className="px-5 pb-5 pt-3 mt-0">
+            <div className="space-y-3.5">
+              <div className="space-y-1">
+                <Label htmlFor="title" className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Title</Label>
+                <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} className="h-10 rounded-xl bg-secondary/40 border-0 text-[14px]" />
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="content" className="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">Content</Label>
-                <Textarea
-                  id="content"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="min-h-[100px] rounded-xl resize-none"
-                />
+              <div className="space-y-1">
+                <Label htmlFor="content" className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Content</Label>
+                <Textarea id="content" value={content} onChange={(e) => setContent(e.target.value)} className="min-h-[80px] rounded-xl bg-secondary/40 border-0 resize-none text-[14px]" />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">Category</Label>
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <Label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Category</Label>
                   <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger className="h-11 rounded-xl">
+                    <SelectTrigger className="h-10 rounded-xl bg-secondary/40 border-0 text-[13px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -325,19 +289,13 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
                   </Select>
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="reminder" className="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">Reminder</Label>
-                  <Input
-                    id="reminder"
-                    type="datetime-local"
-                    value={reminderDate}
-                    onChange={(e) => setReminderDate(e.target.value)}
-                    className="h-11 rounded-xl"
-                  />
+                <div className="space-y-1">
+                  <Label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Reminder</Label>
+                  <Input type="datetime-local" value={reminderDate} onChange={(e) => setReminderDate(e.target.value)} className="h-10 rounded-xl bg-secondary/40 border-0 text-[13px]" />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between bg-secondary/30 rounded-xl px-4 py-3 border border-border/20">
+              <div className="flex items-center justify-between bg-secondary/30 rounded-xl px-3.5 py-2.5">
                 <div>
                   <Label htmlFor="recurring" className="text-[13px] font-medium">Recurring</Label>
                   <p className="text-[11px] text-muted-foreground">Repeat this reminder</p>
@@ -346,29 +304,26 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
               </div>
 
               {isRecurring && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-1.5">
-                  <Label className="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">Frequency</Label>
-                  <Select value={recurrenceType} onValueChange={setRecurrenceType}>
-                    <SelectTrigger className="h-11 rounded-xl">
-                      <SelectValue placeholder="Select frequency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {recurrenceTypes.map((r) => (
-                        <SelectItem key={r} value={r} className="capitalize">{r}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </motion.div>
+                <Select value={recurrenceType} onValueChange={setRecurrenceType}>
+                  <SelectTrigger className="h-10 rounded-xl bg-secondary/40 border-0 text-[13px]">
+                    <SelectValue placeholder="Frequency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {recurrenceTypes.map((r) => (
+                      <SelectItem key={r} value={r} className="capitalize">{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
 
-              <div className="space-y-1.5">
-                <Label className="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">Attachments</Label>
+              <div className="space-y-1">
+                <Label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Attachments</Label>
                 <FileUploader memoryId={note.id} existingFiles={existingFiles} />
               </div>
 
-              <Button onClick={handleSave} disabled={saving || !title.trim()} className="w-full h-12 rounded-xl text-[14px] font-semibold" variant="gradient">
-                {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                Save Changes
+              <Button onClick={handleSave} disabled={saving || !title.trim()} className="w-full h-10 rounded-xl text-[14px] font-semibold" variant="gradient">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Save className="w-4 h-4 mr-1.5" />}
+                Save
               </Button>
             </div>
           </TabsContent>
