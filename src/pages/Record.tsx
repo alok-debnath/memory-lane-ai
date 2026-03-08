@@ -28,6 +28,7 @@ const Record: React.FC = () => {
   const processNote = async (input: string, isAudio: boolean, categoryOverride?: string) => {
     setIsProcessing(true);
     setLastActions(null);
+    setConflicts(null);
     try {
       const { data, error } = await supabase.functions.invoke('process-memory', {
         body: { input, isAudio },
@@ -64,7 +65,6 @@ const Record: React.FC = () => {
       const savedTitle = insertedRows.title;
       setLastSavedMemory({ id: savedId, title: savedTitle });
 
-      // Show extracted actions feedback
       const actions = data.extracted_actions;
       if (actions && actions.length > 0) {
         setLastActions(actions);
@@ -83,7 +83,7 @@ const Record: React.FC = () => {
         if (conflictData?.conflicts?.length > 0) {
           setConflicts(conflictData.conflicts);
         }
-      }).catch(() => {}); // Silent fail for conflicts
+      }).catch(() => {});
 
       setTemplatePrefill(null);
       setCapsuleDate(null);
@@ -159,27 +159,7 @@ const Record: React.FC = () => {
                 defaultValue={templatePrefill?.text}
               />
             </motion.div>
-      )}
-
-      {/* Memory Conflicts */}
-      {conflicts && conflicts.length > 0 && lastSavedMemory && (
-        <MemoryConflicts
-          conflicts={conflicts}
-          newMemoryId={lastSavedMemory.id}
-          newMemoryTitle={lastSavedMemory.title}
-          onDismiss={() => { setConflicts(null); navigate('/'); }}
-        />
-      )}
-
-      {/* Go to Dashboard after actions/conflicts */}
-      {lastActions && lastActions.length > 0 && !conflicts?.length && (
-        <button
-          onClick={() => { setLastActions(null); navigate('/'); }}
-          className="text-[13px] text-primary font-medium"
-        >
-          Go to Dashboard →
-        </button>
-      )}
+          )}
         </AnimatePresence>
       </div>
 
@@ -197,13 +177,25 @@ const Record: React.FC = () => {
               <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded-md capitalize">{action.type}</span>
             </div>
           ))}
-          <button
-            onClick={() => { setLastActions(null); navigate('/'); }}
-            className="text-[13px] text-primary font-medium mt-2"
-          >
-            Go to Dashboard →
-          </button>
+          {!conflicts?.length && (
+            <button
+              onClick={() => { setLastActions(null); navigate('/'); }}
+              className="text-[13px] text-primary font-medium mt-2"
+            >
+              Go to Dashboard →
+            </button>
+          )}
         </motion.div>
+      )}
+
+      {/* Memory Conflicts Detection */}
+      {conflicts && conflicts.length > 0 && lastSavedMemory && (
+        <MemoryConflicts
+          conflicts={conflicts}
+          newMemoryId={lastSavedMemory.id}
+          newMemoryTitle={lastSavedMemory.title}
+          onDismiss={() => { setConflicts(null); navigate('/'); }}
+        />
       )}
 
       {/* Tips */}
