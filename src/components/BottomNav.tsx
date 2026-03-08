@@ -23,12 +23,14 @@ const BottomNav: React.FC = () => {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className="relative flex flex-col items-center justify-center flex-1 h-12 rounded-full transition-all duration-200 active:scale-[0.92]"
+              className={`relative flex flex-col items-center justify-center h-11 rounded-full transition-all duration-200 active:scale-[0.92] ${
+                isActive ? 'px-4' : 'px-3'
+              }`}
             >
               {isActive && (
                 <motion.div
                   layoutId="liquid-glass-pill"
-                  className="absolute inset-0.5 rounded-full liquid-glass-pill"
+                  className="absolute inset-0 rounded-full liquid-glass-pill"
                   transition={{ type: 'spring', stiffness: 500, damping: 35, mass: 0.8 }}
                 />
               )}
