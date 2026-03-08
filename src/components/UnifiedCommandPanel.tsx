@@ -266,7 +266,7 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
   };
 
   const handleClose = () => {
-    setOpen(false);
+    onOpenChange(false);
     stop();
     resetNoteState();
   };
