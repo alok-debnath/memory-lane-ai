@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import ReactMarkdown from 'react-markdown';
 import { useTTS } from '@/hooks/useTTS';
+import { useToast } from '@/hooks/use-toast';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -46,6 +47,7 @@ const AIChatPanel: React.FC = () => {
   const finalTranscriptRef = useRef('');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const { speak, stop, speaking } = useTTS();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -66,6 +68,18 @@ const AIChatPanel: React.FC = () => {
     localStorage.setItem('memora-tts', ttsEnabled ? 'true' : 'false');
   }, [ttsEnabled]);
 
+  // Keyboard shortcut: Escape to close
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && open) {
+        setOpen(false);
+        stop();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [open, stop]);
+
   const sendToAI = useCallback(async (text: string) => {
     if (!text.trim() || loading || !user) return;
     const userMsg: Message = { role: 'user', content: text.trim() };
@@ -81,7 +95,6 @@ const AIChatPanel: React.FC = () => {
           const reply = data.error ? `⚠️ ${data.error}` : data.reply;
           setMessages((p) => [...p, { role: 'assistant', content: reply }]);
           if (data.mutated) queryClient.invalidateQueries({ queryKey: ['memory-notes'] });
-          // Auto-speak response
           if (ttsEnabled && !data.error) speak(reply);
         } catch (err: any) {
           const errMsg = `Something went wrong. ${err.message}`;
@@ -95,14 +108,31 @@ const AIChatPanel: React.FC = () => {
     setInput('');
   }, [loading, user, queryClient, ttsEnabled, speak]);
 
-  const startListening = useCallback(() => {
-    // Stop any ongoing TTS when user starts speaking
+  const startListening = useCallback(async () => {
     stop();
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) {
-      setMessages((p) => [...p, { role: 'assistant', content: "⚠️ Voice not supported here. Use Chrome/Edge or switch to text." }]);
+      toast({
+        title: 'Not supported',
+        description: 'Speech recognition requires Chrome, Edge, or Safari.',
+        variant: 'destructive',
+      });
       return;
     }
+
+    // Request microphone permission
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
+    } catch {
+      toast({
+        title: 'Microphone access denied',
+        description: 'Please allow microphone access in your browser settings.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const recognition = new SR();
     recognition.continuous = false;
     recognition.interimResults = true;
@@ -120,7 +150,19 @@ const AIChatPanel: React.FC = () => {
       if (fin) finalTranscriptRef.current = fin;
       setLiveTranscript(fin || int);
     };
-    recognition.onerror = () => { setIsListening(false); setLiveTranscript(''); if (intervalRef.current) clearInterval(intervalRef.current); };
+    recognition.onerror = (e: any) => {
+      console.error('Speech recognition error:', e.error);
+      setIsListening(false);
+      setLiveTranscript('');
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (e.error === 'not-allowed') {
+        toast({
+          title: 'Microphone blocked',
+          description: 'Enable microphone access in browser settings.',
+          variant: 'destructive',
+        });
+      }
+    };
     recognition.onend = () => {
       setIsListening(false);
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -128,11 +170,21 @@ const AIChatPanel: React.FC = () => {
       setLiveTranscript('');
       if (t) sendToAI(t);
     };
-    recognition.start();
-    setIsListening(true);
-    setDuration(0);
-    intervalRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
-  }, [sendToAI, stop]);
+
+    try {
+      recognition.start();
+      setIsListening(true);
+      setDuration(0);
+      intervalRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
+    } catch (err) {
+      console.error('Failed to start recognition:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to start voice recognition. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  }, [sendToAI, stop, toast]);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current && isListening) recognitionRef.current.stop();
@@ -181,6 +233,7 @@ const AIChatPanel: React.FC = () => {
             transition={{ type: 'spring', stiffness: 350, damping: 28 }}
             className="fixed bottom-20 right-3 sm:bottom-6 sm:right-6 z-50 
               w-[calc(100vw-1.5rem)] sm:w-[440px] h-[calc(100vh-8rem)] sm:h-[640px] max-h-[640px]
+              lg:w-[480px] lg:h-[700px] lg:max-h-[700px]
               rounded-3xl border border-border/40 bg-card/90 backdrop-blur-2xl shadow-2xl
               flex flex-col overflow-hidden"
             style={{ boxShadow: '0 25px 60px -12px hsl(220 25% 10% / 0.25), 0 0 0 1px hsl(var(--border) / 0.3)' }}
@@ -200,7 +253,6 @@ const AIChatPanel: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-0.5">
-                {/* TTS toggle */}
                 <button
                   onClick={() => { setTtsEnabled((v) => !v); if (speaking) stop(); }}
                   className={`h-9 w-9 rounded-xl flex items-center justify-center transition-all ${
@@ -295,7 +347,6 @@ const AIChatPanel: React.FC = () => {
                     ) : (
                       msg.content
                     )}
-                    {/* Tap to replay TTS */}
                     {msg.role === 'assistant' && ttsEnabled && (
                       <button
                         onClick={() => speaking ? stop() : speak(msg.content)}

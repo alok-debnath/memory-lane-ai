@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Home, Bell, User, Brain, LogOut, Clock } from 'lucide-react';
+import { Home, Bell, User, Brain, LogOut, Clock, Plus } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -16,11 +16,14 @@ const navItems = [
 const DesktopSidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
+
+  const firstName = user?.user_metadata?.full_name?.split(' ')[0] || 'User';
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 h-screen bg-card/50 backdrop-blur-xl border-r border-border/50 p-6 fixed left-0 top-0">
-      <div className="flex items-center justify-between mb-10">
+    <aside className="hidden lg:flex flex-col w-64 h-screen bg-card/50 backdrop-blur-xl border-r border-border/50 fixed left-0 top-0 z-30">
+      {/* Logo */}
+      <div className="flex items-center justify-between px-6 py-5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
             <Brain className="w-5 h-5 text-primary-foreground" />
@@ -30,7 +33,10 @@ const DesktopSidebar: React.FC = () => {
         <ThemeToggle />
       </div>
 
-      <nav className="flex-1 space-y-1">
+      <div className="h-px bg-border/30 mx-4" />
+
+      {/* Nav */}
+      <nav className="flex-1 px-3 py-4 space-y-1">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -55,14 +61,28 @@ const DesktopSidebar: React.FC = () => {
         })}
       </nav>
 
-      <Button
-        variant="ghost"
-        className="justify-start gap-3 text-muted-foreground hover:text-destructive"
-        onClick={signOut}
-      >
-        <LogOut className="w-5 h-5" />
-        Sign Out
-      </Button>
+      {/* User section */}
+      <div className="px-4 pb-4 space-y-2">
+        <div className="glass-card px-4 py-3 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <User className="w-4 h-4 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground truncate">{firstName}</p>
+            <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
+          </div>
+        </div>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
+          onClick={signOut}
+        >
+          <LogOut className="w-4 h-4" />
+          Sign Out
+        </Button>
+      </div>
     </aside>
   );
 };

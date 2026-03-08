@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Bell, Trash2, Tag, Pencil, Paperclip } from 'lucide-react';
+import { Calendar, Bell, Trash2, Tag, Pencil, Paperclip, Pin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +32,14 @@ const categoryColors: Record<string, string> = {
   other: 'bg-muted text-muted-foreground',
 };
 
+const categoryEmoji: Record<string, string> = {
+  personal: '🏠',
+  work: '💼',
+  finance: '💰',
+  health: '❤️',
+  other: '📝',
+};
+
 const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete, onEdit }) => {
   const catClass = categoryColors[note.category || 'other'] || categoryColors.other;
   const [attachmentCount, setAttachmentCount] = useState(0);
@@ -57,6 +65,7 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete, onEdit }
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <span className="text-base">{categoryEmoji[note.category || 'other'] || '📝'}</span>
             <h3 className="font-display font-semibold text-foreground text-base truncate">{note.title}</h3>
             {note.category && (
               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${catClass}`}>
