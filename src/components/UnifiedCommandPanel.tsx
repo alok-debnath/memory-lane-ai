@@ -36,8 +36,12 @@ const VoiceWaveform: React.FC = () => (
 
 type Tab = 'chat' | 'note';
 
-const UnifiedCommandPanel: React.FC = () => {
-  const [open, setOpen] = useState(false);
+interface UnifiedCommandPanelProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenChange }) => {
   const [tab, setTab] = useState<Tab>('chat');
 
   // -- Chat state --
