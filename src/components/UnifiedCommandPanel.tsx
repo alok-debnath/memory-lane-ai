@@ -241,7 +241,7 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
       } else {
         toast({ title: 'Memory saved!', description: savedTitle });
         // Auto-close after short delay if no actions
-        setTimeout(() => { setOpen(false); resetNoteState(); }, 600);
+        setTimeout(() => { onOpenChange(false); resetNoteState(); }, 600);
       }
 
       supabase.functions.invoke('detect-conflicts', {
