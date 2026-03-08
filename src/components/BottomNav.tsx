@@ -27,6 +27,7 @@ const BottomNav: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [moreOpen, setMoreOpen] = useState(false);
+  const { open: openPanel } = useCommandPanel();
 
   const isActive = (path: string) => location.pathname === path;
   const isMoreActive = moreItems.some(i => isActive(i.path));
