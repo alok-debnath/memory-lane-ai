@@ -4,12 +4,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import MemoryCard, { type MemoryNote } from '@/components/MemoryCard';
-import { Brain, Plus, Search, Bell } from 'lucide-react';
+import { Brain, Plus, Search, Bell, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { format, isAfter, isBefore, addDays } from 'date-fns';
+import { isAfter, isBefore, addDays, format } from 'date-fns';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -55,11 +55,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">
           Hey, {firstName} 👋
         </h1>
@@ -68,7 +64,6 @@ const Dashboard: React.FC = () => {
         </p>
       </motion.div>
 
-      {/* Upcoming Reminders Strip */}
       {upcomingReminders.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -80,7 +75,7 @@ const Dashboard: React.FC = () => {
             <Bell className="w-4 h-4 text-primary" />
             <h2 className="font-display font-semibold text-foreground text-sm">Upcoming Reminders</h2>
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+          <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
             {upcomingReminders.slice(0, 5).map((r) => (
               <div key={r.id} className="shrink-0 bg-accent/50 rounded-xl px-4 py-3 min-w-[180px]">
                 <p className="text-sm font-medium text-foreground truncate">{r.title}</p>
@@ -93,7 +88,6 @@ const Dashboard: React.FC = () => {
         </motion.div>
       )}
 
-      {/* Search + New */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -115,7 +109,6 @@ const Dashboard: React.FC = () => {
         </Button>
       </motion.div>
 
-      {/* Notes List */}
       {isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
@@ -126,11 +119,7 @@ const Dashboard: React.FC = () => {
           ))}
         </div>
       ) : filteredNotes.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center py-16"
-        >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
           <Brain className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
           <h3 className="font-display font-semibold text-foreground text-lg">
             {search ? 'No matching memories' : 'No memories yet'}
@@ -149,12 +138,7 @@ const Dashboard: React.FC = () => {
         <div className="space-y-3">
           <AnimatePresence>
             {filteredNotes.map((note, i) => (
-              <MemoryCard
-                key={note.id}
-                note={note}
-                index={i}
-                onDelete={(id) => deleteMutation.mutate(id)}
-              />
+              <MemoryCard key={note.id} note={note} index={i} onDelete={(id) => deleteMutation.mutate(id)} />
             ))}
           </AnimatePresence>
         </div>
@@ -162,8 +146,5 @@ const Dashboard: React.FC = () => {
     </div>
   );
 };
-
-// Need Mic import for empty state
-import { Mic } from 'lucide-react';
 
 export default Dashboard;
