@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Bell, Trash2, Tag } from 'lucide-react';
+import { Calendar, Bell, Trash2, Tag, Pencil, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface MemoryNote {
   id: string;
@@ -20,6 +21,7 @@ interface MemoryCardProps {
   note: MemoryNote;
   index: number;
   onDelete: (id: string) => void;
+  onEdit: (note: MemoryNote) => void;
 }
 
 const categoryColors: Record<string, string> = {
@@ -30,8 +32,17 @@ const categoryColors: Record<string, string> = {
   other: 'bg-muted text-muted-foreground',
 };
 
-const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete }) => {
+const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete, onEdit }) => {
   const catClass = categoryColors[note.category || 'other'] || categoryColors.other;
+  const [attachmentCount, setAttachmentCount] = useState(0);
+
+  useEffect(() => {
+    supabase
+      .from('memory_attachments')
+      .select('id', { count: 'exact', head: true })
+      .eq('memory_id', note.id)
+      .then(({ count }) => setAttachmentCount(count || 0));
+  }, [note.id]);
 
   return (
     <motion.div
@@ -40,7 +51,8 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete }) => {
       exit={{ opacity: 0, y: -20, scale: 0.95 }}
       transition={{ delay: index * 0.05, duration: 0.3 }}
       layout
-      className="glass-card p-4 sm:p-5 group hover:shadow-lg transition-shadow duration-300"
+      className="glass-card p-4 sm:p-5 group hover:shadow-lg transition-shadow duration-300 cursor-pointer"
+      onClick={() => onEdit(note)}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
@@ -65,6 +77,12 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete }) => {
                 )}
               </div>
             )}
+            {attachmentCount > 0 && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Paperclip className="w-3.5 h-3.5" />
+                <span>{attachmentCount}</span>
+              </div>
+            )}
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Calendar className="w-3.5 h-3.5" />
               <span>{format(new Date(note.created_at), 'MMM d')}</span>
@@ -72,14 +90,24 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete }) => {
           </div>
         </div>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onDelete(note.id)}
-          className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive shrink-0"
-        >
-          <Trash2 className="w-4 h-4" />
-        </Button>
+        <div className="flex flex-col gap-1 shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => { e.stopPropagation(); onEdit(note); }}
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary h-8 w-8"
+          >
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => { e.stopPropagation(); onDelete(note.id); }}
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive h-8 w-8"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
     </motion.div>
   );
