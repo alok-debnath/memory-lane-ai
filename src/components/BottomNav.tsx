@@ -122,6 +122,12 @@ const BottomNav: React.FC = () => {
           >
             <Plus className="w-6 h-6" strokeWidth={2.5} />
           </button>
+
+          {rightItems.map(item => (
+            <NavButton key={item.path} {...item} />
+          ))}
+
+          {/* More button */}
           <button
             onClick={() => setMoreOpen(!moreOpen)}
             className="relative flex flex-col items-center justify-center w-14 h-12 rounded-full active:scale-[0.92]"
