@@ -14,7 +14,7 @@ import { isAfter, isBefore, addDays, format } from 'date-fns';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState('');
