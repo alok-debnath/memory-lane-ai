@@ -9,12 +9,10 @@ import { Brain, Search, Bell, Mic, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { useToast } from '@/hooks/use-toast';
 import { isAfter, isBefore, addDays, format } from 'date-fns';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState('');
