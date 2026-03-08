@@ -359,7 +359,7 @@ async function executeTool(
         return JSON.stringify({
           history: (data || []).map((h: any) => ({
             history_id: h.id, memory_id: h.memory_id,
-            action: h.action === "DELETE" ? "deleted" : "edited",
+            action: h.action === "delete" ? "deleted" : "edited",
             title: h.snapshot?.title, category: h.snapshot?.category,
             content_preview: h.snapshot?.content?.substring(0, 100),
             changed_at: h.created_at,
@@ -451,7 +451,7 @@ serve(async (req) => {
 
 7. **ANALYSIS**: When asked to analyze, summarize, or find patterns, use the analyze_memories tool to get data, then provide genuine insights — not just a list.
 
-8. **UNDO & HISTORY**: Every edit and delete is automatically versioned for 7 days. When the user says "undo", "revert", "restore", or "I accidentally deleted...", use undo_last_action or get_history + restore_memory. You can show them recent changes with get_history. Always reassure them that nothing is permanently lost for 7 days.
+8. **UNDO & HISTORY**: Every edit and delete is automatically versioned for 7 days. When the user says "undo", "revert", "restore", "what did I delete", or "I accidentally deleted...", use the 'history' tool with action='list' to see changes, action='undo' to revert the last change, or action='restore' with a history_id to restore a specific version. Always reassure them that nothing is permanently lost for 7 days.
 
 Today's date: ${new Date().toISOString().split('T')[0]}
 Format dates in a human-friendly way (e.g., "March 15, 2026" not ISO strings).
