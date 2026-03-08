@@ -129,7 +129,7 @@ serve(async (req) => {
         return clean;
       });
 
-    return new Response(JSON.stringify({ results: merged }), {
+    return new Response(JSON.stringify({ results: merged, documentResults: documentResults || [] }), {
       headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "private, max-age=30" },
     });
   } catch (e) {

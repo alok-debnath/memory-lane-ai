@@ -35,6 +35,13 @@ const Dashboard: React.FC = () => {
         .from('memory_notes')
         .select('id, title, content, category, reminder_date, is_recurring, recurrence_type, created_at, updated_at, user_id, mood, capsule_unlock_date, extracted_actions')
         .order('created_at', { ascending: false });
+      // Fetch tags separately (new column)
+      if (data) {
+        const ids = data.map(d => d.id);
+        const { data: tagData } = await (supabase as any).from('memory_notes').select('id, tags').in('id', ids);
+        const tagMap = new Map((tagData || []).map((t: any) => [t.id, t.tags || []]));
+        data.forEach((d: any) => { d.tags = tagMap.get(d.id) || []; });
+      }
       if (error) throw error;
       return data as MemoryNote[];
     },

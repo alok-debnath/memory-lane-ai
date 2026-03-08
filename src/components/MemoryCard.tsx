@@ -127,6 +127,18 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete, onEdit }
             {format(new Date(note.created_at), 'MMM d')}
           </span>
         </div>
+        {note.tags && note.tags.length > 0 && !isLocked && (
+          <div className="flex items-center gap-1 mt-1 flex-wrap">
+            {note.tags.slice(0, 3).map(tag => (
+              <span key={tag} className="text-[10px] bg-primary/8 text-primary/80 px-1.5 py-0.5 rounded-full">
+                {tag}
+              </span>
+            ))}
+            {note.tags.length > 3 && (
+              <span className="text-[10px] text-muted-foreground">+{note.tags.length - 3}</span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Actions */}

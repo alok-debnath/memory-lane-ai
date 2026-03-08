@@ -12,6 +12,9 @@ import Timeline from "./pages/Timeline";
 import Reminders from "./pages/Reminders";
 import Profile from "./pages/Profile";
 import Stats from "./pages/Stats";
+import Documents from "./pages/Documents";
+import Review from "./pages/Review";
+import KnowledgeGraph from "./pages/KnowledgeGraph";
 import SharedMemory from "./pages/SharedMemory";
 import AppLayout from "./components/AppLayout";
 import Onboarding from "./components/Onboarding";
@@ -61,6 +64,9 @@ const App = () => (
               <Route path="/timeline" element={<Timeline />} />
               <Route path="/reminders" element={<Reminders />} />
               <Route path="/stats" element={<Stats />} />
+              <Route path="/documents" element={<Documents />} />
+              <Route path="/review" element={<Review />} />
+              <Route path="/graph" element={<KnowledgeGraph />} />
               <Route path="/profile" element={<Profile />} />
             </Route>
             <Route path="*" element={<NotFound />} />
