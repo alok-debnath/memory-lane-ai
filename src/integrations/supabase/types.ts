@@ -14,7 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      memory_notes: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string
+          id: string
+          is_recurring: boolean
+          recurrence_type: string | null
+          reminder_date: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          is_recurring?: boolean
+          recurrence_type?: string | null
+          reminder_date?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          is_recurring?: boolean
+          recurrence_type?: string | null
+          reminder_date?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
