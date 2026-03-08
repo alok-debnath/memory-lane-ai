@@ -279,7 +279,7 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
 
   return (
     <>
-      {/* FAB */}
+      {/* Desktop-only FAB (mobile uses BottomNav center button) */}
       <AnimatePresence>
         {!open && (
           <motion.button
@@ -287,8 +287,8 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
             animate={{ scale: 1 }}
             exit={{ scale: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-            onClick={() => setOpen(true)}
-            className="fixed bottom-[72px] right-4 sm:bottom-6 sm:right-6 z-50 h-14 w-14 rounded-full btn-gradient flex items-center justify-center lg:bottom-6"
+            onClick={() => onOpenChange(true)}
+            className="hidden lg:flex fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full btn-gradient items-center justify-center"
             style={{ boxShadow: '0 4px 20px -4px hsl(36 85% 52% / 0.4)' }}
           >
             <Plus className="w-6 h-6 text-primary-foreground" />
