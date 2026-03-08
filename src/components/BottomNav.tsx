@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, FileText, RotateCcw, MoreHorizontal, Network, BarChart3, User, Bell, X } from 'lucide-react';
+import { Home, Plus, FileText, RotateCcw, MoreHorizontal, Network, BarChart3, User, Bell, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useCommandPanel } from './AppLayout';
 
 const primaryItems = [
   { path: '/', icon: Home, label: 'Home' },
