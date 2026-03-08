@@ -75,6 +75,36 @@ serve(async (req) => {
           }));
         } catch { return []; }
       })(),
+
+      // Layer 3: Document extraction search (vector search through uploaded docs)
+      (async () => {
+        try {
+          const embResponse = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "text-embedding-3-small",
+              input: query,
+              dimensions: 768,
+            }),
+          });
+          if (!embResponse.ok) return [];
+          const embData = await embResponse.json();
+          const queryEmbedding = embData.data?.[0]?.embedding;
+          if (!queryEmbedding) return [];
+
+          const { data } = await supabase.rpc("match_documents", {
+            query_embedding: queryEmbedding,
+            match_threshold: 0.25,
+            match_count: 10,
+            p_user_id: userId,
+          });
+          return data || [];
+        } catch { return []; }
+      })(),
     ]);
 
     // Merge, deduplicate, boost multi-source matches
