@@ -2,3 +2,9 @@ project_id = "qzsofnpcyjltdpctsenr"
 
 [functions.process-memory]
 verify_jwt = false
+
+[functions.semantic-search]
+verify_jwt = false
+
+[functions.memory-chat]
+verify_jwt = false
