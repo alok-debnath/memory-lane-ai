@@ -25,7 +25,7 @@ const BottomNav: React.FC = () => {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className="relative flex flex-col items-center justify-center w-14 h-11 rounded-full active:scale-[0.92]"
+              className="relative flex flex-col items-center justify-center w-16 h-12 rounded-full active:scale-[0.92]"
             >
               {isActive && (
                 <motion.div
