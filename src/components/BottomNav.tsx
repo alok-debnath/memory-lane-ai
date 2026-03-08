@@ -108,18 +108,20 @@ const BottomNav: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Bottom bar - no center + button, FAB is in UnifiedCommandPanel */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden flex justify-center pointer-events-none pb-safe">
-        <div className="liquid-glass-bar pointer-events-auto mb-3 mx-auto px-1.5 py-1.5 flex items-center justify-around gap-0" style={{ width: 'min(90vw, 320px)' }}>
+        <div className="liquid-glass-bar pointer-events-auto mb-3 mx-auto px-1.5 py-1.5 flex items-center justify-around gap-0" style={{ width: 'min(90vw, 340px)' }}>
           {primaryItems.map(item => (
             <NavButton key={item.path} {...item} />
           ))}
 
-          {rightItems.map(item => (
-            <NavButton key={item.path} {...item} />
-          ))}
-
-          {/* More button */}
+          {/* Center + button */}
+          <button
+            onClick={openPanel}
+            className="relative flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground transition-all active:scale-90"
+            style={{ boxShadow: '0 4px 16px -2px hsl(36 85% 52% / 0.35)' }}
+          >
+            <Plus className="w-6 h-6" strokeWidth={2.5} />
+          </button>
           <button
             onClick={() => setMoreOpen(!moreOpen)}
             className="relative flex flex-col items-center justify-center w-14 h-12 rounded-full active:scale-[0.92]"
