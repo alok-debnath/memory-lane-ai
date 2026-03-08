@@ -58,10 +58,8 @@ const DesktopSidebar: React.FC = () => {
       {/* New Memory button */}
       <div className="px-3 pt-3 pb-1">
         <button
-          onClick={() => navigate('/record')}
-          className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all btn-gradient ${
-            location.pathname === '/record' ? 'ring-2 ring-primary/30' : ''
-          }`}
+          onClick={openNewMemory}
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all btn-gradient"
         >
           <Plus className="w-[18px] h-[18px]" strokeWidth={2.2} />
           New Memory

@@ -62,7 +62,7 @@ const App = () => (
             <Route path="/shared/:token" element={<SharedMemory />} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />
-              <Route path="/record" element={<Record />} />
+              
               <Route path="/timeline" element={<Timeline />} />
               <Route path="/reminders" element={<Reminders />} />
               <Route path="/stats" element={<Stats />} />

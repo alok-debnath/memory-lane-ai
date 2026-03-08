@@ -117,12 +117,8 @@ const BottomNav: React.FC = () => {
 
           {/* Center Record FAB */}
           <button
-            onClick={() => navigate('/record')}
-            className={`relative flex items-center justify-center w-12 h-12 rounded-full transition-all active:scale-90 ${
-              isActive('/record')
-                ? 'bg-primary text-primary-foreground shadow-lg'
-                : 'bg-primary/90 text-primary-foreground'
-            }`}
+            onClick={openNewMemory}
+            className="relative flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground transition-all active:scale-90"
             style={{ boxShadow: '0 4px 16px -2px hsl(36 85% 52% / 0.35)' }}
           >
             <Plus className="w-6 h-6" strokeWidth={2.5} />
