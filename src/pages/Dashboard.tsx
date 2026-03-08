@@ -5,16 +5,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import MemoryCard, { type MemoryNote } from '@/components/MemoryCard';
 import EditMemoryDialog from '@/components/EditMemoryDialog';
-import { Brain, Plus, Search, Bell, Mic, Sparkles } from 'lucide-react';
+import { Brain, Search, Bell, Mic, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { isAfter, isBefore, addDays, format } from 'date-fns';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState('');
@@ -153,10 +151,10 @@ const Dashboard: React.FC = () => {
             <Sparkles className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary animate-pulse" />
           )}
         </div>
-        <Button variant="gradient" size="lg" onClick={() => navigate('/record')} className="shrink-0">
-          <Plus className="w-5 h-5" />
-          <span className="hidden sm:inline">New Memory</span>
-        </Button>
+        <p className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
+          <Mic className="w-3 h-3" />
+          Use the mic button to add
+        </p>
       </motion.div>
 
       {semanticResults !== null && search && (
@@ -182,14 +180,8 @@ const Dashboard: React.FC = () => {
             {search ? 'No matching memories' : 'No memories yet'}
           </h3>
           <p className="text-muted-foreground mt-1 text-sm">
-            {search ? 'Try rephrasing your search' : 'Tap the microphone to create your first memory'}
+            {search ? 'Try rephrasing your search' : 'Tap the 🎤 button to create your first memory with AI'}
           </p>
-          {!search && (
-            <Button variant="gradient" className="mt-6" onClick={() => navigate('/record')}>
-              <Mic className="w-4 h-4" />
-              Create Memory
-            </Button>
-          )}
         </motion.div>
       ) : (
         <div className="space-y-3">

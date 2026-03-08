@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mic, Square, X, Send, Loader2, Bot, User, Sparkles,
-  Keyboard, MicOff,
+  Keyboard, Brain,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,7 +30,7 @@ const AIChatPanel: React.FC = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
-  const transcriptRef = useRef('');
+  const finalTranscriptRef = useRef('');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -45,50 +45,55 @@ const AIChatPanel: React.FC = () => {
     }
   }, [open, mode]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (recognitionRef.current) recognitionRef.current.abort();
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch {}
+      }
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
 
-  const sendToAI = async (text: string) => {
+  const sendToAI = useCallback(async (text: string) => {
     if (!text.trim() || loading || !user) return;
 
     const userMsg: Message = { role: 'user', content: text.trim() };
-    const allMessages = [...messages, userMsg];
-    setMessages(allMessages);
-    setInput('');
-    setLoading(true);
+    setMessages((prev) => {
+      const allMessages = [...prev, userMsg];
+      // Fire async request
+      (async () => {
+        setLoading(true);
+        try {
+          const { data, error } = await supabase.functions.invoke('memory-chat', {
+            body: {
+              messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
+              userId: user.id,
+            },
+          });
 
-    try {
-      const { data, error } = await supabase.functions.invoke('memory-chat', {
-        body: {
-          messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
-          userId: user.id,
-        },
-      });
+          if (error) throw error;
 
-      if (error) throw error;
-
-      if (data.error) {
-        setMessages([...allMessages, { role: 'assistant', content: `⚠️ ${data.error}` }]);
-      } else {
-        setMessages([...allMessages, { role: 'assistant', content: data.reply }]);
-        if (data.mutated) {
-          queryClient.invalidateQueries({ queryKey: ['memory-notes'] });
+          if (data.error) {
+            setMessages((p) => [...p, { role: 'assistant', content: `⚠️ ${data.error}` }]);
+          } else {
+            setMessages((p) => [...p, { role: 'assistant', content: data.reply }]);
+            if (data.mutated) {
+              queryClient.invalidateQueries({ queryKey: ['memory-notes'] });
+            }
+          }
+        } catch (err: any) {
+          setMessages((p) => [
+            ...p,
+            { role: 'assistant', content: `Sorry, something went wrong: ${err.message}` },
+          ]);
+        } finally {
+          setLoading(false);
         }
-      }
-    } catch (err: any) {
-      setMessages([
-        ...allMessages,
-        { role: 'assistant', content: `Sorry, something went wrong: ${err.message}` },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
+      })();
+      return allMessages;
+    });
+    setInput('');
+  }, [loading, user, queryClient]);
 
   const startListening = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -101,37 +106,42 @@ const AIChatPanel: React.FC = () => {
     }
 
     const recognition = new SpeechRecognition();
-    recognition.continuous = true;
+    // Use non-continuous mode to avoid duplication — one utterance per tap
+    recognition.continuous = false;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
     recognitionRef.current = recognition;
-    transcriptRef.current = '';
+    finalTranscriptRef.current = '';
     setLiveTranscript('');
 
     recognition.onresult = (event: any) => {
-      let final = '';
-      let interim = '';
+      let finalText = '';
+      let interimText = '';
       for (let i = 0; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
-          final += event.results[i][0].transcript;
+          finalText += transcript;
         } else {
-          interim += event.results[i][0].transcript;
+          interimText += transcript;
         }
       }
-      transcriptRef.current = final;
-      setLiveTranscript(final + (interim ? ` ${interim}` : ''));
+      if (finalText) {
+        finalTranscriptRef.current = finalText;
+      }
+      setLiveTranscript(finalText || interimText);
     };
 
     recognition.onerror = (event: any) => {
       console.error('Speech error:', event.error);
       setIsListening(false);
+      setLiveTranscript('');
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
 
     recognition.onend = () => {
       setIsListening(false);
       if (intervalRef.current) clearInterval(intervalRef.current);
-      const text = transcriptRef.current.trim();
+      const text = finalTranscriptRef.current.trim();
       setLiveTranscript('');
       if (text) {
         sendToAI(text);
@@ -142,13 +152,11 @@ const AIChatPanel: React.FC = () => {
     setIsListening(true);
     setDuration(0);
     intervalRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
-  }, [messages, user, loading]);
+  }, [sendToAI]);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current && isListening) {
       recognitionRef.current.stop();
-      setIsListening(false);
-      if (intervalRef.current) clearInterval(intervalRef.current);
     }
   }, [isListening]);
 
@@ -160,7 +168,7 @@ const AIChatPanel: React.FC = () => {
 
   return (
     <>
-      {/* FAB - Voice-first mic button */}
+      {/* FAB - Large mic button */}
       <AnimatePresence>
         {!open && (
           <motion.div
@@ -169,18 +177,17 @@ const AIChatPanel: React.FC = () => {
             exit={{ scale: 0 }}
             className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-50"
           >
-            <Button
+            <button
               onClick={() => setOpen(true)}
-              className="h-16 w-16 rounded-full shadow-xl btn-gradient"
-              size="icon"
+              className="h-16 w-16 rounded-full shadow-xl btn-gradient flex items-center justify-center"
             >
-              <Mic className="w-7 h-7" />
-            </Button>
+              <Mic className="w-7 h-7 text-primary-foreground" />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Voice-first AI Panel */}
+      {/* AI Panel */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -194,15 +201,14 @@ const AIChatPanel: React.FC = () => {
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-primary" />
+                  <Brain className="w-4 h-4 text-primary" />
                 </div>
                 <div>
                   <h3 className="font-display font-semibold text-foreground text-sm">Memora AI</h3>
-                  <p className="text-xs text-muted-foreground">Voice-first memory assistant</p>
+                  <p className="text-xs text-muted-foreground">Your voice-first memory hub</p>
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                {/* Voice / Text toggle */}
                 <Button
                   variant="ghost"
                   size="icon"
@@ -218,7 +224,7 @@ const AIChatPanel: React.FC = () => {
               </div>
             </div>
 
-            {/* Messages area */}
+            {/* Messages */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
               {messages.length === 0 && !isListening && (
                 <div className="text-center py-6">
@@ -226,17 +232,18 @@ const AIChatPanel: React.FC = () => {
                     <Mic className="w-8 h-8 text-primary" />
                   </div>
                   <h4 className="font-display font-semibold text-foreground text-sm mb-1">
-                    Talk to Memora
+                    Your single hub for everything
                   </h4>
                   <p className="text-xs text-muted-foreground mb-4">
-                    Speak or type to search, create, and edit your memories
+                    Speak or type to create, search, edit, or delete memories
                   </p>
                   <div className="space-y-2">
                     {[
+                      "Remember my WiFi password is starlight42",
                       "What did I save about my passport?",
-                      "Remind me to call the dentist tomorrow",
-                      "Update my WiFi password note",
-                      "Show my work memories",
+                      "Change my dentist note to next Friday",
+                      "Delete the old grocery list",
+                      "Show all my work memories",
                     ].map((q) => (
                       <button
                         key={q}
@@ -285,7 +292,7 @@ const AIChatPanel: React.FC = () => {
                 </motion.div>
               ))}
 
-              {/* Live transcript while recording */}
+              {/* Live transcript */}
               {isListening && liveTranscript && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-2 justify-end">
                   <div className="max-w-[80%] rounded-2xl rounded-br-md px-3 py-2 text-sm bg-primary/20 text-foreground italic">
@@ -310,7 +317,7 @@ const AIChatPanel: React.FC = () => {
               )}
             </div>
 
-            {/* Input Area - Voice-first */}
+            {/* Input Area */}
             <div className="px-3 py-3 border-t border-border/50">
               {mode === 'voice' ? (
                 <div className="flex flex-col items-center gap-2">
@@ -352,7 +359,7 @@ const AIChatPanel: React.FC = () => {
                   </AnimatePresence>
                   <p className="text-xs text-muted-foreground">
                     {isListening
-                      ? `Listening... ${formatDuration(duration)}`
+                      ? `Listening... ${formatDuration(duration)} · tap to send`
                       : loading
                         ? 'Processing...'
                         : 'Tap to speak'}

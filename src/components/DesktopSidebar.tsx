@@ -1,13 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Home, Mic, Bell, User, Brain, LogOut } from 'lucide-react';
+import { Home, Bell, User, Brain, LogOut } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 
 const navItems = [
   { path: '/', icon: Home, label: 'Dashboard' },
-  { path: '/record', icon: Mic, label: 'Record' },
   { path: '/reminders', icon: Bell, label: 'Reminders' },
   { path: '/profile', icon: User, label: 'Profile' },
 ];

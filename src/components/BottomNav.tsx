@@ -1,11 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Home, Mic, Bell, User } from 'lucide-react';
+import { Home, Bell, User } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const navItems = [
   { path: '/', icon: Home, label: 'Home' },
-  { path: '/record', icon: Mic, label: 'Record' },
   { path: '/reminders', icon: Bell, label: 'Reminders' },
   { path: '/profile', icon: User, label: 'Profile' },
 ];
@@ -15,7 +14,7 @@ const BottomNav: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-t border-border/50 px-2 pb-safe lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card/80 backdrop-blur-xl border-t border-border/50 px-2 pb-safe lg:hidden">
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
