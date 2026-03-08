@@ -26,7 +26,7 @@ const Record: React.FC = () => {
 
       if (error) throw error;
 
-      const { error: insertError } = await supabase.from('memory_notes').insert({
+      const insertPayload: any = {
         title: data.title,
         content: data.content,
         reminder_date: data.reminder_date || null,
@@ -34,7 +34,11 @@ const Record: React.FC = () => {
         recurrence_type: data.recurrence_type || null,
         category: data.category || 'other',
         user_id: user!.id,
-      });
+      };
+      if (data.embedding) {
+        insertPayload.embedding = data.embedding;
+      }
+      const { error: insertError } = await supabase.from('memory_notes').insert(insertPayload);
 
       if (insertError) throw insertError;
 
