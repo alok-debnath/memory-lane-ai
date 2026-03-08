@@ -5,10 +5,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import MemoryCard, { type MemoryNote } from '@/components/MemoryCard';
 import EditMemoryDialog from '@/components/EditMemoryDialog';
-import { Brain, Plus, Search, Bell, Mic, Sparkles } from 'lucide-react';
+import { Brain, Search, Bell, Mic, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 import { useToast } from '@/hooks/use-toast';
 import { isAfter, isBefore, addDays, format } from 'date-fns';
 
