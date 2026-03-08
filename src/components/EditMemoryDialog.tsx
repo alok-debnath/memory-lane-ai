@@ -25,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { type MemoryNote } from '@/components/MemoryCard';
 import FileUploader from '@/components/FileUploader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import RelatedMemories from '@/components/RelatedMemories';
 
 interface EditMemoryDialogProps {
   note: MemoryNote | null;
@@ -325,6 +326,17 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
                 {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Save className="w-4 h-4 mr-1.5" />}
                 Save
               </Button>
+
+              {/* Related memories */}
+              <RelatedMemories
+                note={note}
+                onSelect={(related) => {
+                  // Load the related memory into the form
+                  setTitle(related.title);
+                  setContent(related.content);
+                  setCategory(related.category || 'other');
+                }}
+              />
             </div>
           </TabsContent>
         </Tabs>

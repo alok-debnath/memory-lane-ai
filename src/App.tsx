@@ -11,6 +11,8 @@ import Dashboard from "./pages/Dashboard";
 import Timeline from "./pages/Timeline";
 import Reminders from "./pages/Reminders";
 import Profile from "./pages/Profile";
+import Stats from "./pages/Stats";
+import SharedMemory from "./pages/SharedMemory";
 import AppLayout from "./components/AppLayout";
 import Onboarding from "./components/Onboarding";
 import NotFound from "./pages/NotFound";
@@ -53,10 +55,12 @@ const App = () => (
             <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/shared/:token" element={<SharedMemory />} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/timeline" element={<Timeline />} />
               <Route path="/reminders" element={<Reminders />} />
+              <Route path="/stats" element={<Stats />} />
               <Route path="/profile" element={<Profile />} />
             </Route>
             <Route path="*" element={<NotFound />} />

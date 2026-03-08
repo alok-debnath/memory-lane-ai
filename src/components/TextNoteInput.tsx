@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Loader2, PenLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,10 +7,15 @@ import { Textarea } from '@/components/ui/textarea';
 interface TextNoteInputProps {
   onSubmit: (text: string) => void;
   isProcessing: boolean;
+  defaultValue?: string;
 }
 
-const TextNoteInput: React.FC<TextNoteInputProps> = ({ onSubmit, isProcessing }) => {
-  const [text, setText] = useState('');
+const TextNoteInput: React.FC<TextNoteInputProps> = ({ onSubmit, isProcessing, defaultValue }) => {
+  const [text, setText] = useState(defaultValue || '');
+
+  useEffect(() => {
+    if (defaultValue) setText(defaultValue);
+  }, [defaultValue]);
 
   const handleSubmit = () => {
     if (text.trim()) {

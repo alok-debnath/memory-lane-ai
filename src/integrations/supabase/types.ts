@@ -97,6 +97,41 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_memories: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          memory_id: string
+          share_token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          memory_id: string
+          share_token?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          memory_id?: string
+          share_token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_memories_memory_id_fkey"
+            columns: ["memory_id"]
+            isOneToOne: false
+            referencedRelation: "memory_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
