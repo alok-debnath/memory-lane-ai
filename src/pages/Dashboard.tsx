@@ -20,6 +20,7 @@ const categoryEmoji: Record<string, string> = {
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState('');
