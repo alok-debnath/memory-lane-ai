@@ -2,22 +2,24 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import VoiceRecorder from '@/components/VoiceRecorder';
 import TextNoteInput from '@/components/TextNoteInput';
+import MemoryTemplates, { type MemoryTemplate } from '@/components/MemoryTemplates';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { Mic, PenLine, Lightbulb } from 'lucide-react';
+import { Mic, PenLine, Lightbulb, LayoutTemplate } from 'lucide-react';
 
 const Record: React.FC = () => {
-  const [mode, setMode] = useState<'voice' | 'text'>('voice');
+  const [mode, setMode] = useState<'voice' | 'text' | 'template'>('voice');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [templatePrefill, setTemplatePrefill] = useState<{ text: string; category: string } | null>(null);
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const processNote = async (input: string, isAudio: boolean) => {
+  const processNote = async (input: string, isAudio: boolean, categoryOverride?: string) => {
     setIsProcessing(true);
     try {
       const { data, error } = await supabase.functions.invoke('process-memory', {
@@ -32,7 +34,7 @@ const Record: React.FC = () => {
         reminder_date: data.reminder_date || null,
         is_recurring: data.is_recurring || false,
         recurrence_type: data.recurrence_type || null,
-        category: data.category || 'other',
+        category: categoryOverride || data.category || 'other',
         user_id: user!.id,
       };
       if (data.embedding) {
@@ -44,6 +46,7 @@ const Record: React.FC = () => {
 
       queryClient.invalidateQueries({ queryKey: ['memory-notes'] });
       toast({ title: 'Memory saved!', description: data.title });
+      setTemplatePrefill(null);
       navigate('/');
     } catch (err: any) {
       console.error('Process error:', err);
@@ -53,23 +56,29 @@ const Record: React.FC = () => {
     }
   };
 
+  const handleTemplateSelect = (template: MemoryTemplate) => {
+    setTemplatePrefill({ text: template.prefill, category: template.category });
+    setMode('text');
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-display font-bold text-foreground tracking-tight">New Memory</h1>
-        <p className="text-[13px] text-muted-foreground mt-0.5">Speak or type — AI will organize it</p>
+        <p className="text-[13px] text-muted-foreground mt-0.5">Speak, type, or use a template</p>
       </div>
 
       {/* Mode Toggle */}
-      <div className="native-card p-1 max-w-xs mx-auto sm:mx-0 flex">
+      <div className="native-card p-1 max-w-sm mx-auto sm:mx-0 flex">
         {[
           { key: 'voice' as const, icon: Mic, label: 'Voice' },
           { key: 'text' as const, icon: PenLine, label: 'Type' },
+          { key: 'template' as const, icon: LayoutTemplate, label: 'Template' },
         ].map((m) => (
           <button
             key={m.key}
             onClick={() => setMode(m.key)}
-            className={`relative flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-medium transition-all ${
+            className={`relative flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[13px] font-medium transition-all ${
               mode === m.key ? 'text-foreground' : 'text-muted-foreground'
             }`}
           >
@@ -88,19 +97,28 @@ const Record: React.FC = () => {
 
       {/* Input Area */}
       <div className="flex items-center justify-center min-h-[280px]">
-        {mode === 'voice' ? (
-          <VoiceRecorder
-            onTranscriptionComplete={(text) => processNote(text, false)}
-            isProcessing={isProcessing}
-          />
-        ) : (
-          <div className="w-full">
-            <TextNoteInput
-              onSubmit={(text) => processNote(text, false)}
-              isProcessing={isProcessing}
-            />
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+          {mode === 'voice' ? (
+            <motion.div key="voice" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <VoiceRecorder
+                onTranscriptionComplete={(text) => processNote(text, false)}
+                isProcessing={isProcessing}
+              />
+            </motion.div>
+          ) : mode === 'template' ? (
+            <motion.div key="template" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full">
+              <MemoryTemplates onSelect={handleTemplateSelect} />
+            </motion.div>
+          ) : (
+            <motion.div key="text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full">
+              <TextNoteInput
+                onSubmit={(text) => processNote(text, false, templatePrefill?.category)}
+                isProcessing={isProcessing}
+                defaultValue={templatePrefill?.text}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Tips */}
