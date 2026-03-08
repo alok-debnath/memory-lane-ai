@@ -10,6 +10,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { Mic, PenLine, Lightbulb, LayoutTemplate, CheckCircle2 } from 'lucide-react';
+import MemoryConflicts from '@/components/MemoryConflicts';
 
 const Record: React.FC = () => {
   const [mode, setMode] = useState<'voice' | 'text' | 'template'>('voice');
