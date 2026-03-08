@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { FileText, Search, ShieldCheck, Clock, AlertTriangle, FileIcon, Image, Receipt, ScrollText, Award, Sparkles } from 'lucide-react';
+import { FileText, Search, ShieldCheck, Clock, AlertTriangle, FileIcon, Image, Receipt, ScrollText, Award, Sparkles, Upload, Loader2, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import { format, isPast, isBefore, addDays } from 'date-fns';
 
 interface DocExtraction {
