@@ -19,6 +19,7 @@ export interface MemoryNote {
   mood?: string | null;
   capsule_unlock_date?: string | null;
   extracted_actions?: any[] | null;
+  tags?: string[] | null;
 }
 
 interface MemoryCardProps {
