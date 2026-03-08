@@ -36,8 +36,12 @@ const VoiceWaveform: React.FC = () => (
 
 type Tab = 'chat' | 'note';
 
-const UnifiedCommandPanel: React.FC = () => {
-  const [open, setOpen] = useState(false);
+interface UnifiedCommandPanelProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenChange }) => {
   const [tab, setTab] = useState<Tab>('chat');
 
   // -- Chat state --
@@ -90,7 +94,7 @@ const UnifiedCommandPanel: React.FC = () => {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && open) { setOpen(false); stop(); }
+      if (e.key === 'Escape' && open) { onOpenChange(false); stop(); }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -237,7 +241,7 @@ const UnifiedCommandPanel: React.FC = () => {
       } else {
         toast({ title: 'Memory saved!', description: savedTitle });
         // Auto-close after short delay if no actions
-        setTimeout(() => { setOpen(false); resetNoteState(); }, 600);
+        setTimeout(() => { onOpenChange(false); resetNoteState(); }, 600);
       }
 
       supabase.functions.invoke('detect-conflicts', {
@@ -262,7 +266,7 @@ const UnifiedCommandPanel: React.FC = () => {
   };
 
   const handleClose = () => {
-    setOpen(false);
+    onOpenChange(false);
     stop();
     resetNoteState();
   };
@@ -275,7 +279,7 @@ const UnifiedCommandPanel: React.FC = () => {
 
   return (
     <>
-      {/* FAB */}
+      {/* Desktop-only FAB (mobile uses BottomNav center button) */}
       <AnimatePresence>
         {!open && (
           <motion.button
@@ -283,8 +287,8 @@ const UnifiedCommandPanel: React.FC = () => {
             animate={{ scale: 1 }}
             exit={{ scale: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-            onClick={() => setOpen(true)}
-            className="fixed bottom-[72px] right-4 sm:bottom-6 sm:right-6 z-50 h-14 w-14 rounded-full btn-gradient flex items-center justify-center lg:bottom-6"
+            onClick={() => onOpenChange(true)}
+            className="hidden lg:flex fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full btn-gradient items-center justify-center"
             style={{ boxShadow: '0 4px 20px -4px hsl(36 85% 52% / 0.4)' }}
           >
             <Plus className="w-6 h-6 text-primary-foreground" />
