@@ -18,6 +18,8 @@ const Record: React.FC = () => {
   const [templatePrefill, setTemplatePrefill] = useState<{ text: string; category: string } | null>(null);
   const [capsuleDate, setCapsuleDate] = useState<string | null>(null);
   const [lastActions, setLastActions] = useState<any[] | null>(null);
+  const [conflicts, setConflicts] = useState<any[] | null>(null);
+  const [lastSavedMemory, setLastSavedMemory] = useState<{ id: string; title: string } | null>(null);
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
