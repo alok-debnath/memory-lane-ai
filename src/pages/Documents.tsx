@@ -108,6 +108,77 @@ const Documents: React.FC = () => {
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !user) return;
+    setUploading(true);
+
+    try {
+      for (const file of Array.from(files)) {
+        // 1. Create a memory note as a container
+        const { data: memory, error: memError } = await supabase
+          .from('memory_notes')
+          .insert({
+            title: `📄 ${file.name}`,
+            content: `Document upload: ${file.name}`,
+            category: 'other',
+            user_id: user.id,
+          })
+          .select()
+          .single();
+        if (memError) throw memError;
+
+        // 2. Upload file to storage
+        const ext = file.name.split('.').pop();
+        const path = `${user.id}/${memory.id}/${crypto.randomUUID()}.${ext}`;
+        const { error: uploadErr } = await supabase.storage
+          .from('memory-attachments')
+          .upload(path, file);
+        if (uploadErr) throw uploadErr;
+
+        // 3. Create attachment record
+        const { data: attachment, error: attachErr } = await supabase
+          .from('memory_attachments')
+          .insert({
+            memory_id: memory.id,
+            user_id: user.id,
+            file_name: file.name,
+            file_path: path,
+            file_type: file.type,
+            file_size: file.size,
+          })
+          .select()
+          .single();
+        if (attachErr) throw attachErr;
+
+        // 4. Get public URL and trigger AI processing
+        const { data: urlData } = supabase.storage.from('memory-attachments').getPublicUrl(path);
+
+        supabase.functions.invoke('process-document', {
+          body: {
+            attachmentId: attachment.id,
+            memoryId: memory.id,
+            userId: user.id,
+            fileUrl: urlData.publicUrl,
+            fileType: file.type,
+            fileName: file.name,
+          },
+        }).then(() => {
+          queryClient.invalidateQueries({ queryKey: ['document-extractions'] });
+        });
+      }
+
+      toast({ title: `${files.length} document(s) uploaded`, description: 'AI is analyzing your documents...' });
+      // Refresh after a short delay for AI processing
+      setTimeout(() => queryClient.invalidateQueries({ queryKey: ['document-extractions'] }), 3000);
+    } catch (err: any) {
+      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   let displayDocs = searchResults !== null ? searchResults : documents;
   if (typeFilter) {
     displayDocs = displayDocs.filter(d => d.document_type === typeFilter);
@@ -120,14 +191,38 @@ const Documents: React.FC = () => {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-display font-bold text-foreground tracking-tight flex items-center gap-2.5">
-          <FileText className="w-6 h-6 text-primary" />
-          Document Vault
-        </h1>
-        <p className="text-[13px] text-muted-foreground mt-0.5">
-          {documents.length} document{documents.length !== 1 ? 's' : ''} · AI-extracted & searchable
-        </p>
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept="image/*,application/pdf,.doc,.docx,.txt"
+        className="hidden"
+        onChange={handleFileUpload}
+      />
+
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-display font-bold text-foreground tracking-tight flex items-center gap-2.5">
+            <FileText className="w-6 h-6 text-primary" />
+            Document Vault
+          </h1>
+          <p className="text-[13px] text-muted-foreground mt-0.5">
+            {documents.length} document{documents.length !== 1 ? 's' : ''} · AI-extracted & searchable
+          </p>
+        </div>
+        <Button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          size="sm"
+          className="shrink-0"
+        >
+          {uploading ? (
+            <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+          ) : (
+            <Plus className="w-4 h-4 mr-1.5" />
+          )}
+          {uploading ? 'Uploading...' : 'Upload'}
+        </Button>
       </div>
 
       {/* Expiring soon alert */}
