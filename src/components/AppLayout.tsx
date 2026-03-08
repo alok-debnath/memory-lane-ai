@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import BottomNav from './BottomNav';
 import DesktopSidebar from './DesktopSidebar';
+import AIChatPanel from './AIChatPanel';
 
 const AppLayout: React.FC = () => {
   return (
@@ -13,6 +14,7 @@ const AppLayout: React.FC = () => {
         </div>
       </main>
       <BottomNav />
+      <AIChatPanel />
     </div>
   );
 };
