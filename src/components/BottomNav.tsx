@@ -28,7 +28,7 @@ const BottomNav: React.FC = () => {
               {isActive && (
                 <motion.div
                   layoutId="liquid-glass-pill"
-                  className="absolute inset-0.5 rounded-[14px] liquid-glass-pill"
+                  className="absolute inset-0.5 rounded-full liquid-glass-pill"
                   transition={{ type: 'spring', stiffness: 500, damping: 35, mass: 0.8 }}
                 />
               )}
