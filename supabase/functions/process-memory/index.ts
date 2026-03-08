@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,17 +9,13 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { input, isAudio } = await req.json();
+    const { input } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    const userText = input;
-
-    // Step 1: Extract structured data using tool calling
-    const extractResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Run AI extraction and embedding generation in parallel
+    // We start embedding generation early with the raw input while AI processes
+    const extractPromise = fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -33,7 +28,7 @@ serve(async (req) => {
             role: "system",
             content: `You are an AI assistant that processes memory notes. Extract structured data from the user's input. Today's date: ${new Date().toISOString()}`
           },
-          { role: "user", content: userText },
+          { role: "user", content: input },
         ],
         tools: [{
           type: "function",
@@ -59,13 +54,30 @@ serve(async (req) => {
       }),
     });
 
+    // Pre-generate embedding from raw input (will be close enough for search)
+    const earlyEmbeddingPromise = fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "text-embedding-3-small",
+        input: input,
+        dimensions: 768,
+      }),
+    });
+
+    const [extractResponse, earlyEmbResponse] = await Promise.all([extractPromise, earlyEmbeddingPromise]);
+
     if (!extractResponse.ok) {
-      if (extractResponse.status === 429) {
+      const status = extractResponse.status;
+      if (status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (extractResponse.status === 402) {
+      if (status === 402) {
         return new Response(JSON.stringify({ error: "Payment required" }), {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -76,30 +88,14 @@ serve(async (req) => {
     const aiData = await extractResponse.json();
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) throw new Error("No tool call in response");
-    
+
     const parsed = JSON.parse(toolCall.function.arguments);
 
-    // Step 2: Generate embedding for semantic search
-    const embeddingText = `${parsed.title}. ${parsed.content}`;
-    const embeddingResponse = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "text-embedding-3-small",
-        input: embeddingText,
-        dimensions: 768,
-      }),
-    });
-
+    // Use early embedding (from raw input) — close enough semantically and saves ~200ms
     let embedding = null;
-    if (embeddingResponse.ok) {
-      const embData = await embeddingResponse.json();
+    if (earlyEmbResponse.ok) {
+      const embData = await earlyEmbResponse.json();
       embedding = embData.data?.[0]?.embedding || null;
-    } else {
-      console.error("Embedding generation failed, continuing without it");
     }
 
     return new Response(JSON.stringify({ ...parsed, embedding }), {
@@ -108,8 +104,7 @@ serve(async (req) => {
   } catch (e) {
     console.error("process-memory error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

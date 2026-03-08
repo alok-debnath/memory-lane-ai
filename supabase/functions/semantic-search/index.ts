@@ -6,6 +6,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Reuse client across requests (edge functions are warm)
+let _supabase: ReturnType<typeof createClient> | null = null;
+function getSupabase() {
+  if (!_supabase) {
+    _supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  }
+  return _supabase;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -14,75 +23,59 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = getSupabase();
 
-    // Run all 3 search layers in parallel:
-    // 1. Vector/semantic search (meaning-based)
-    // 2. Fuzzy search via pg_trgm (typo-tolerant)
-    // 3. Falls back inside fuzzy_search_memories which also does ILIKE
+    // Run all 3 search layers in parallel for maximum speed
+    const [semanticResults, fuzzyResults] = await Promise.all([
+      // Layer 1: Vector semantic search
+      (async () => {
+        try {
+          const embResponse = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "text-embedding-3-small",
+              input: query,
+              dimensions: 768,
+            }),
+          });
+          if (!embResponse.ok) return [];
+          const embData = await embResponse.json();
+          const queryEmbedding = embData.data?.[0]?.embedding;
+          if (!queryEmbedding) return [];
 
-    const semanticPromise = (async () => {
-      try {
-        const embResponse = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "text-embedding-3-small",
-            input: query,
-            dimensions: 768,
-          }),
-        });
+          const { data } = await supabase.rpc("match_memories", {
+            query_embedding: queryEmbedding,
+            match_threshold: 0.2,
+            match_count: 15,
+            p_user_id: userId,
+          });
+          return (data || []).map((r: Record<string, unknown>) => ({
+            ...r, _score: ((r.similarity as number) || 0), _source: "semantic",
+          }));
+        } catch { return []; }
+      })(),
 
-        if (!embResponse.ok) return [];
+      // Layer 2: Fuzzy + keyword search (uses trigram indexes, very fast)
+      (async () => {
+        try {
+          const { data } = await supabase.rpc("fuzzy_search_memories", {
+            search_query: query,
+            p_user_id: userId,
+            similarity_threshold: 0.12,
+            max_results: 15,
+          });
+          return (data || []).map((r: Record<string, unknown>) => ({
+            ...r, _score: ((r.fuzzy_score as number) || 0) * 0.7, _source: "fuzzy",
+          }));
+        } catch { return []; }
+      })(),
+    ]);
 
-        const embData = await embResponse.json();
-        const queryEmbedding = embData.data?.[0]?.embedding;
-        if (!queryEmbedding) return [];
-
-        const { data: results } = await supabase.rpc("match_memories", {
-          query_embedding: queryEmbedding,
-          match_threshold: 0.2,
-          match_count: 20,
-          p_user_id: userId,
-        });
-
-        return (results || []).map((r: Record<string, unknown>) => ({
-          ...r,
-          _score: ((r.similarity as number) || 0) * 1.0, // highest weight for semantic
-          _source: "semantic",
-        }));
-      } catch {
-        return [];
-      }
-    })();
-
-    const fuzzyPromise = (async () => {
-      try {
-        const { data: results } = await supabase.rpc("fuzzy_search_memories", {
-          search_query: query,
-          p_user_id: userId,
-          similarity_threshold: 0.12,
-          max_results: 20,
-        });
-
-        return (results || []).map((r: Record<string, unknown>) => ({
-          ...r,
-          _score: ((r.fuzzy_score as number) || 0) * 0.7, // slightly lower weight
-          _source: "fuzzy",
-        }));
-      } catch {
-        return [];
-      }
-    })();
-
-    const [semanticResults, fuzzyResults] = await Promise.all([semanticPromise, fuzzyPromise]);
-
-    // Merge and deduplicate, keeping highest score per memory
+    // Merge, deduplicate, boost multi-source matches
     const scoreMap = new Map<string, { item: Record<string, unknown>; score: number; sources: string[] }>();
 
     for (const item of [...semanticResults, ...fuzzyResults]) {
@@ -90,34 +83,27 @@ serve(async (req) => {
       const existing = scoreMap.get(id);
       if (existing) {
         existing.sources.push(item._source as string);
-        // Boost score when found by multiple methods
-        existing.score = Math.max(existing.score, item._score as number) * 1.1;
+        existing.score = Math.max(existing.score, item._score as number) * 1.15;
       } else {
-        scoreMap.set(id, {
-          item,
-          score: item._score as number,
-          sources: [item._source as string],
-        });
+        scoreMap.set(id, { item, score: item._score as number, sources: [item._source as string] });
       }
     }
 
-    // Sort by combined score
     const merged = Array.from(scoreMap.values())
       .sort((a, b) => b.score - a.score)
-      .map(({ item, score, sources }) => {
-        // Clean up internal fields
+      .slice(0, 20)
+      .map(({ item }) => {
         const { _score, _source, fuzzy_score, similarity, ...clean } = item as Record<string, unknown>;
-        return { ...clean, _relevance: score, _sources: sources };
+        return clean;
       });
 
     return new Response(JSON.stringify({ results: merged }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "private, max-age=30" },
     });
   } catch (e) {
     console.error("semantic-search error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

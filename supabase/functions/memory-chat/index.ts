@@ -6,6 +6,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+let _supabase: ReturnType<typeof createClient> | null = null;
+function getSupabase() {
+  if (!_supabase) {
+    _supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  }
+  return _supabase;
+}
+
 const TOOLS = [
   {
     type: "function",
@@ -119,25 +127,31 @@ async function executeTool(
 ): Promise<string> {
   switch (name) {
     case "search_memories": {
-      const embedding = await generateEmbedding(args.query, apiKey);
-      if (!embedding) {
-        // Fallback to text search
-        const { data } = await supabase
-          .from("memory_notes")
-          .select("id, title, content, category, reminder_date, is_recurring, recurrence_type, created_at")
-          .eq("user_id", userId)
-          .or(`title.ilike.%${args.query}%,content.ilike.%${args.query}%`)
-          .order("created_at", { ascending: false })
-          .limit(10);
-        return JSON.stringify({ results: data || [] });
+      // Run semantic + fuzzy in parallel for speed
+      const [semanticResults, fuzzyResults] = await Promise.all([
+        (async () => {
+          const embedding = await generateEmbedding(args.query, apiKey);
+          if (!embedding) return [];
+          const { data } = await supabase.rpc("match_memories", {
+            query_embedding: embedding, match_threshold: 0.2, match_count: 10, p_user_id: userId,
+          });
+          return data || [];
+        })(),
+        (async () => {
+          const { data } = await supabase.rpc("fuzzy_search_memories", {
+            search_query: args.query, p_user_id: userId, similarity_threshold: 0.12, max_results: 10,
+          });
+          return data || [];
+        })(),
+      ]);
+
+      // Deduplicate
+      const seen = new Set<string>();
+      const merged = [];
+      for (const item of [...semanticResults, ...fuzzyResults]) {
+        if (!seen.has(item.id)) { seen.add(item.id); merged.push(item); }
       }
-      const { data } = await supabase.rpc("match_memories", {
-        query_embedding: embedding,
-        match_threshold: 0.3,
-        match_count: 10,
-        p_user_id: userId,
-      });
-      return JSON.stringify({ results: data || [] });
+      return JSON.stringify({ results: merged });
     }
 
     case "create_memory": {
@@ -145,16 +159,11 @@ async function executeTool(
       const { data, error } = await supabase
         .from("memory_notes")
         .insert({
-          title: args.title,
-          content: args.content,
-          category: args.category || "other",
-          reminder_date: args.reminder_date || null,
-          is_recurring: args.is_recurring || false,
-          recurrence_type: args.recurrence_type || null,
-          user_id: userId,
-          embedding,
+          title: args.title, content: args.content, category: args.category || "other",
+          reminder_date: args.reminder_date || null, is_recurring: args.is_recurring || false,
+          recurrence_type: args.recurrence_type || null, user_id: userId, embedding,
         })
-        .select()
+        .select("id, title, category, created_at")
         .single();
       if (error) return JSON.stringify({ error: error.message });
       return JSON.stringify({ success: true, memory: data });
@@ -162,59 +171,41 @@ async function executeTool(
 
     case "update_memory": {
       const updates: Record<string, any> = {};
-      if (args.title !== undefined) updates.title = args.title;
-      if (args.content !== undefined) updates.content = args.content;
-      if (args.category !== undefined) updates.category = args.category;
-      if (args.reminder_date !== undefined) updates.reminder_date = args.reminder_date;
-      if (args.is_recurring !== undefined) updates.is_recurring = args.is_recurring;
-      if (args.recurrence_type !== undefined) updates.recurrence_type = args.recurrence_type;
+      for (const key of ["title", "content", "category", "reminder_date", "is_recurring", "recurrence_type"]) {
+        if (args[key] !== undefined) updates[key] = args[key];
+      }
 
-      // Regenerate embedding if title or content changed
       if (args.title || args.content) {
         const { data: existing } = await supabase
-          .from("memory_notes")
-          .select("title, content")
-          .eq("id", args.memory_id)
-          .eq("user_id", userId)
-          .single();
+          .from("memory_notes").select("title, content")
+          .eq("id", args.memory_id).eq("user_id", userId).single();
         if (existing) {
-          const t = args.title || existing.title;
-          const c = args.content || existing.content;
-          const emb = await generateEmbedding(`${t}. ${c}`, apiKey);
+          const emb = await generateEmbedding(`${args.title || existing.title}. ${args.content || existing.content}`, apiKey);
           if (emb) updates.embedding = emb;
         }
       }
 
       const { data, error } = await supabase
-        .from("memory_notes")
-        .update(updates)
-        .eq("id", args.memory_id)
-        .eq("user_id", userId)
-        .select()
-        .single();
+        .from("memory_notes").update(updates)
+        .eq("id", args.memory_id).eq("user_id", userId)
+        .select("id, title, category").single();
       if (error) return JSON.stringify({ error: error.message });
       return JSON.stringify({ success: true, memory: data });
     }
 
     case "delete_memory": {
-      const { error } = await supabase
-        .from("memory_notes")
-        .delete()
-        .eq("id", args.memory_id)
-        .eq("user_id", userId);
+      const { error } = await supabase.from("memory_notes").delete()
+        .eq("id", args.memory_id).eq("user_id", userId);
       if (error) return JSON.stringify({ error: error.message });
       return JSON.stringify({ success: true });
     }
 
     case "list_memories": {
-      let q = supabase
-        .from("memory_notes")
+      let q = supabase.from("memory_notes")
         .select("id, title, content, category, reminder_date, is_recurring, recurrence_type, created_at")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
+        .eq("user_id", userId).order("created_at", { ascending: false });
       if (args.category) q = q.eq("category", args.category);
-      if (args.limit) q = q.limit(args.limit);
-      else q = q.limit(20);
+      q = q.limit(args.limit || 20);
       const { data } = await q;
       return JSON.stringify({ memories: data || [] });
     }
@@ -232,9 +223,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = getSupabase();
 
     const systemPrompt = `You are Memora AI, a warm and helpful assistant that helps users manage their memories and notes. You can:
 - Search through memories using natural language
@@ -250,12 +239,12 @@ Be conversational, helpful, and proactive. If the user describes a memory vaguel
 Today's date: ${new Date().toISOString()}
 Format dates nicely in your responses. Use markdown for formatting.`;
 
-    let conversationMessages = [
+    const conversationMessages: any[] = [
       { role: "system", content: systemPrompt },
       ...messages,
     ];
 
-    // Agentic loop: keep calling AI until no more tool calls
+    // Agentic loop with parallel tool execution
     let maxIterations = 5;
     while (maxIterations-- > 0) {
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -287,43 +276,35 @@ Format dates nicely in your responses. Use markdown for formatting.`;
       }
 
       const data = await response.json();
-      const choice = data.choices?.[0];
-      const msg = choice?.message;
-
+      const msg = data.choices?.[0]?.message;
       if (!msg) throw new Error("No message in response");
 
-      // Add assistant message to conversation
       conversationMessages.push(msg);
 
-      // If there are tool calls, execute them
       if (msg.tool_calls && msg.tool_calls.length > 0) {
-        for (const tc of msg.tool_calls) {
-          const args = JSON.parse(tc.function.arguments);
-          const result = await executeTool(tc.function.name, args, supabase, userId, LOVABLE_API_KEY);
-          conversationMessages.push({
-            role: "tool",
-            tool_call_id: tc.id,
-            content: result,
-          });
-        }
-        continue; // Loop back to let AI process tool results
+        // Execute all tool calls in parallel
+        const toolResults = await Promise.all(
+          msg.tool_calls.map(async (tc: any) => {
+            const args = JSON.parse(tc.function.arguments);
+            const result = await executeTool(tc.function.name, args, supabase, userId, LOVABLE_API_KEY);
+            return { role: "tool", tool_call_id: tc.id, content: result };
+          })
+        );
+        conversationMessages.push(...toolResults);
+        continue;
       }
 
       // No tool calls = final response
-      // Check if any tool executed a mutation (created/updated/deleted)
       const toolResults = conversationMessages.filter((m: any) => m.role === "tool");
       let mutated = false;
       for (const tr of toolResults) {
         try {
           const parsed = JSON.parse(tr.content);
           if (parsed.success) { mutated = true; break; }
-        } catch { }
+        } catch {}
       }
 
-      return new Response(JSON.stringify({
-        reply: msg.content,
-        mutated,
-      }), {
+      return new Response(JSON.stringify({ reply: msg.content, mutated }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

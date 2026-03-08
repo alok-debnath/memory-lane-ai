@@ -35,11 +35,12 @@ const Dashboard: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('memory_notes')
-        .select('*')
+        .select('id, title, content, category, reminder_date, is_recurring, recurrence_type, created_at, updated_at, user_id')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as MemoryNote[];
     },
+    staleTime: 30_000, // 30s before refetch
   });
 
   const deleteMutation = useMutation({
