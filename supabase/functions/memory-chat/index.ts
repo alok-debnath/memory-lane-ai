@@ -359,7 +359,7 @@ async function executeTool(
         return JSON.stringify({
           history: (data || []).map((h: any) => ({
             history_id: h.id, memory_id: h.memory_id,
-            action: h.action === "DELETE" ? "deleted" : "edited",
+            action: h.action === "delete" ? "deleted" : "edited",
             title: h.snapshot?.title, category: h.snapshot?.category,
             content_preview: h.snapshot?.content?.substring(0, 100),
             changed_at: h.created_at,
