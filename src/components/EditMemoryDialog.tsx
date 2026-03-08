@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, Mic, Square, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -37,6 +38,10 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [voiceEditing, setVoiceEditing] = useState(false);
+  const [voiceProcessing, setVoiceProcessing] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const transcriptRef = useRef('');
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -55,7 +60,6 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
       setIsRecurring(note.is_recurring);
       setRecurrenceType(note.recurrence_type || '');
 
-      // Load existing attachments
       supabase
         .from('memory_attachments')
         .select('*')
@@ -101,6 +105,77 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
     }
   };
 
+  const startVoiceEdit = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast({ title: 'Not supported', description: 'Use Chrome or Edge for voice editing', variant: 'destructive' });
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    recognitionRef.current = recognition;
+    transcriptRef.current = '';
+
+    recognition.onresult = (event: any) => {
+      let t = '';
+      for (let i = 0; i < event.results.length; i++) {
+        t += event.results[i][0].transcript;
+      }
+      transcriptRef.current = t;
+    };
+
+    recognition.onerror = () => setVoiceEditing(false);
+
+    recognition.onend = async () => {
+      setVoiceEditing(false);
+      const voiceText = transcriptRef.current.trim();
+      if (!voiceText || !note) return;
+
+      setVoiceProcessing(true);
+      try {
+        // Send voice instruction + current note to AI for editing
+        const { data, error } = await supabase.functions.invoke('memory-chat', {
+          body: {
+            messages: [
+              {
+                role: 'user',
+                content: `I want to edit this memory (ID: ${note.id}). Current title: "${title}". Current content: "${content}". Current category: "${category}". My edit instruction: "${voiceText}". Please update this memory accordingly.`,
+              },
+            ],
+            userId: note.user_id,
+          },
+        });
+
+        if (error) throw error;
+
+        if (data.mutated) {
+          queryClient.invalidateQueries({ queryKey: ['memory-notes'] });
+          toast({ title: 'Memory updated by voice!' });
+          onOpenChange(false);
+        } else {
+          toast({ title: 'Voice edit', description: data.reply });
+        }
+      } catch (err: any) {
+        toast({ title: 'Voice edit failed', description: err.message, variant: 'destructive' });
+      } finally {
+        setVoiceProcessing(false);
+      }
+    };
+
+    recognition.start();
+    setVoiceEditing(true);
+  }, [note, title, content, category, toast, queryClient, onOpenChange]);
+
+  const stopVoiceEdit = useCallback(() => {
+    if (recognitionRef.current && voiceEditing) {
+      recognitionRef.current.stop();
+      setVoiceEditing(false);
+    }
+  }, [voiceEditing]);
+
   if (!note) return null;
 
   return (
@@ -109,6 +184,67 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
         <DialogHeader>
           <DialogTitle className="font-display">Edit Memory</DialogTitle>
         </DialogHeader>
+
+        {/* Voice Edit Section */}
+        <div className="flex items-center justify-center py-3">
+          <AnimatePresence mode="wait">
+            {voiceProcessing ? (
+              <motion.div
+                key="processing"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                className="flex flex-col items-center gap-2"
+              >
+                <div className="w-14 h-14 rounded-full bg-accent flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+                </div>
+                <p className="text-xs text-muted-foreground">AI is applying your edits...</p>
+              </motion.div>
+            ) : voiceEditing ? (
+              <motion.div
+                key="listening"
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                className="flex flex-col items-center gap-2"
+              >
+                <motion.button
+                  onClick={stopVoiceEdit}
+                  className="w-14 h-14 rounded-full bg-destructive flex items-center justify-center cursor-pointer pulse-ring"
+                >
+                  <Square className="w-5 h-5 text-destructive-foreground" />
+                </motion.button>
+                <p className="text-xs text-muted-foreground">Listening... describe your edits</p>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="idle"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="flex flex-col items-center gap-2"
+              >
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={startVoiceEdit}
+                  className="w-14 h-14 rounded-full btn-gradient flex items-center justify-center cursor-pointer"
+                >
+                  <Mic className="w-6 h-6 text-primary-foreground" />
+                </motion.button>
+                <p className="text-xs text-muted-foreground">Tap to edit with your voice</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-border/50" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-card px-2 text-muted-foreground">or edit manually</span>
+          </div>
+        </div>
 
         <div className="space-y-4 pt-2">
           <div className="space-y-2">
