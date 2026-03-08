@@ -20,11 +20,13 @@ const BottomNav: React.FC = () => {
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
-            <button
+            <motion.button
+              layout
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`relative flex flex-col items-center justify-center h-11 rounded-full transition-all duration-200 active:scale-[0.92] ${
-                isActive ? 'px-4' : 'px-3'
+              transition={{ type: 'spring', stiffness: 500, damping: 35, mass: 0.8 }}
+              className={`relative flex items-center justify-center h-10 rounded-full transition-colors duration-200 active:scale-[0.92] ${
+                isActive ? 'gap-1.5 px-4' : 'w-10'
               }`}
             >
               {isActive && (
