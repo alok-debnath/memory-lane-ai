@@ -57,12 +57,15 @@ export type Database = {
       }
       memory_notes: {
         Row: {
+          capsule_unlock_date: string | null
           category: string | null
           content: string
           created_at: string
           embedding: string | null
+          extracted_actions: Json | null
           id: string
           is_recurring: boolean
+          mood: string | null
           recurrence_type: string | null
           reminder_date: string | null
           title: string
@@ -70,12 +73,15 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          capsule_unlock_date?: string | null
           category?: string | null
           content: string
           created_at?: string
           embedding?: string | null
+          extracted_actions?: Json | null
           id?: string
           is_recurring?: boolean
+          mood?: string | null
           recurrence_type?: string | null
           reminder_date?: string | null
           title: string
@@ -83,12 +89,15 @@ export type Database = {
           user_id: string
         }
         Update: {
+          capsule_unlock_date?: string | null
           category?: string | null
           content?: string
           created_at?: string
           embedding?: string | null
+          extracted_actions?: Json | null
           id?: string
           is_recurring?: boolean
+          mood?: string | null
           recurrence_type?: string | null
           reminder_date?: string | null
           title?: string
@@ -154,6 +163,40 @@ export type Database = {
           recurrence_type: string
           reminder_date: string
           title: string
+        }[]
+      }
+      get_flashback_memories: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: {
+          category: string
+          content: string
+          created_at: string
+          id: string
+          mood: string
+          title: string
+        }[]
+      }
+      get_memories_paginated: {
+        Args: {
+          p_category?: string
+          p_cursor?: string
+          p_limit?: number
+          p_user_id: string
+        }
+        Returns: {
+          capsule_unlock_date: string
+          category: string
+          content: string
+          created_at: string
+          extracted_actions: Json
+          id: string
+          is_recurring: boolean
+          mood: string
+          recurrence_type: string
+          reminder_date: string
+          title: string
+          updated_at: string
+          user_id: string
         }[]
       }
       match_memories: {
