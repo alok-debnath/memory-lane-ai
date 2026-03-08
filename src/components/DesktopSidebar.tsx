@@ -22,6 +22,7 @@ const DesktopSidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { open: openNewMemory } = useContext(NewMemoryContext);
 
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] || 'User';
 
