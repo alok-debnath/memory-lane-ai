@@ -182,14 +182,8 @@ const Dashboard: React.FC = () => {
             {search ? 'No matching memories' : 'No memories yet'}
           </h3>
           <p className="text-muted-foreground mt-1 text-sm">
-            {search ? 'Try rephrasing your search' : 'Tap the microphone to create your first memory'}
+            {search ? 'Try rephrasing your search' : 'Tap the 🎤 button to create your first memory with AI'}
           </p>
-          {!search && (
-            <Button variant="gradient" className="mt-6" onClick={() => navigate('/record')}>
-              <Mic className="w-4 h-4" />
-              Create Memory
-            </Button>
-          )}
         </motion.div>
       ) : (
         <div className="space-y-3">
