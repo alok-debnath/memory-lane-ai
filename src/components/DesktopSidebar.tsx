@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Home, Bell, User, Brain, LogOut, Clock, BarChart3, FileText, Network, RotateCcw, Plus } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
+import { NewMemoryContext } from './AppLayout';
 
 const mainNav = [
   { path: '/', icon: Home, label: 'Dashboard' },
