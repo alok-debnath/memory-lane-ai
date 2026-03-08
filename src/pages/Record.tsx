@@ -10,6 +10,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { Mic, PenLine, Lightbulb, LayoutTemplate, CheckCircle2 } from 'lucide-react';
+import MemoryConflicts from '@/components/MemoryConflicts';
 
 const Record: React.FC = () => {
   const [mode, setMode] = useState<'voice' | 'text' | 'template'>('voice');
@@ -17,6 +18,8 @@ const Record: React.FC = () => {
   const [templatePrefill, setTemplatePrefill] = useState<{ text: string; category: string } | null>(null);
   const [capsuleDate, setCapsuleDate] = useState<string | null>(null);
   const [lastActions, setLastActions] = useState<any[] | null>(null);
+  const [conflicts, setConflicts] = useState<any[] | null>(null);
+  const [lastSavedMemory, setLastSavedMemory] = useState<{ id: string; title: string } | null>(null);
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -25,6 +28,7 @@ const Record: React.FC = () => {
   const processNote = async (input: string, isAudio: boolean, categoryOverride?: string) => {
     setIsProcessing(true);
     setLastActions(null);
+    setConflicts(null);
     try {
       const { data, error } = await supabase.functions.invoke('process-memory', {
         body: { input, isAudio },
@@ -47,24 +51,39 @@ const Record: React.FC = () => {
       if (data.embedding) {
         insertPayload.embedding = data.embedding;
       }
-      const { error: insertError } = await supabase.from('memory_notes').insert(insertPayload);
+      const { data: insertedRows, error: insertError } = await supabase
+        .from('memory_notes')
+        .insert(insertPayload)
+        .select('id, title')
+        .single();
 
       if (insertError) throw insertError;
 
       queryClient.invalidateQueries({ queryKey: ['memory-notes'] });
 
-      // Show extracted actions feedback
+      const savedId = insertedRows.id;
+      const savedTitle = insertedRows.title;
+      setLastSavedMemory({ id: savedId, title: savedTitle });
+
       const actions = data.extracted_actions;
       if (actions && actions.length > 0) {
         setLastActions(actions);
         toast({
           title: '✨ Memory saved!',
-          description: `${data.title} — ${actions.length} action${actions.length !== 1 ? 's' : ''} extracted`,
+          description: `${savedTitle} — ${actions.length} action${actions.length !== 1 ? 's' : ''} extracted`,
         });
       } else {
-        toast({ title: 'Memory saved!', description: data.title });
-        navigate('/');
+        toast({ title: 'Memory saved!', description: savedTitle });
       }
+
+      // Run conflict detection in background (non-blocking)
+      supabase.functions.invoke('detect-conflicts', {
+        body: { memoryId: savedId, content: data.content, title: savedTitle, userId: user!.id },
+      }).then(({ data: conflictData }) => {
+        if (conflictData?.conflicts?.length > 0) {
+          setConflicts(conflictData.conflicts);
+        }
+      }).catch(() => {});
 
       setTemplatePrefill(null);
       setCapsuleDate(null);
@@ -158,13 +177,25 @@ const Record: React.FC = () => {
               <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded-md capitalize">{action.type}</span>
             </div>
           ))}
-          <button
-            onClick={() => { setLastActions(null); navigate('/'); }}
-            className="text-[13px] text-primary font-medium mt-2"
-          >
-            Go to Dashboard →
-          </button>
+          {!conflicts?.length && (
+            <button
+              onClick={() => { setLastActions(null); navigate('/'); }}
+              className="text-[13px] text-primary font-medium mt-2"
+            >
+              Go to Dashboard →
+            </button>
+          )}
         </motion.div>
+      )}
+
+      {/* Memory Conflicts Detection */}
+      {conflicts && conflicts.length > 0 && lastSavedMemory && (
+        <MemoryConflicts
+          conflicts={conflicts}
+          newMemoryId={lastSavedMemory.id}
+          newMemoryTitle={lastSavedMemory.title}
+          onDismiss={() => { setConflicts(null); navigate('/'); }}
+        />
       )}
 
       {/* Tips */}

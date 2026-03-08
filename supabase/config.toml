@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.memory-chat]
 verify_jwt = false
+
+[functions.detect-conflicts]
+verify_jwt = false
