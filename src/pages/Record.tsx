@@ -159,7 +159,27 @@ const Record: React.FC = () => {
                 defaultValue={templatePrefill?.text}
               />
             </motion.div>
-          )}
+      )}
+
+      {/* Memory Conflicts */}
+      {conflicts && conflicts.length > 0 && lastSavedMemory && (
+        <MemoryConflicts
+          conflicts={conflicts}
+          newMemoryId={lastSavedMemory.id}
+          newMemoryTitle={lastSavedMemory.title}
+          onDismiss={() => { setConflicts(null); navigate('/'); }}
+        />
+      )}
+
+      {/* Go to Dashboard after actions/conflicts */}
+      {lastActions && lastActions.length > 0 && !conflicts?.length && (
+        <button
+          onClick={() => { setLastActions(null); navigate('/'); }}
+          className="text-[13px] text-primary font-medium"
+        >
+          Go to Dashboard →
+        </button>
+      )}
         </AnimatePresence>
       </div>
 
