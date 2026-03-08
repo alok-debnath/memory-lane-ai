@@ -373,6 +373,90 @@ async function executeTool(
       return JSON.stringify({ memories: data || [], count: (data || []).length });
     }
 
+    case "get_history": {
+      let q = supabase.from("memory_history")
+        .select("id, memory_id, action, snapshot, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+      if (args.memory_id) q = q.eq("memory_id", args.memory_id);
+      q = q.limit(args.limit || 20);
+      const { data } = await q;
+      const entries = (data || []).map((h: any) => ({
+        history_id: h.id,
+        memory_id: h.memory_id,
+        action: h.action === "DELETE" ? "deleted" : "edited",
+        title: h.snapshot?.title,
+        category: h.snapshot?.category,
+        content_preview: h.snapshot?.content?.substring(0, 100),
+        changed_at: h.created_at,
+      }));
+      return JSON.stringify({ history: entries, count: entries.length });
+    }
+
+    case "restore_memory": {
+      // Get the history entry
+      const { data: historyEntry, error: hErr } = await supabase
+        .from("memory_history")
+        .select("*")
+        .eq("id", args.history_id)
+        .eq("user_id", userId)
+        .single();
+      if (hErr || !historyEntry) return JSON.stringify({ error: "History entry not found" });
+
+      const snap = historyEntry.snapshot;
+      const memoryId = historyEntry.memory_id;
+
+      // Check if memory still exists
+      const { data: existing } = await supabase
+        .from("memory_notes")
+        .select("id")
+        .eq("id", memoryId)
+        .eq("user_id", userId)
+        .single();
+
+      if (existing) {
+        // Memory exists: update it back to snapshot state
+        const { error } = await supabase.from("memory_notes").update({
+          title: snap.title, content: snap.content, category: snap.category,
+          mood: snap.mood, tags: snap.tags, reminder_date: snap.reminder_date,
+          is_recurring: snap.is_recurring, recurrence_type: snap.recurrence_type,
+          capsule_unlock_date: snap.capsule_unlock_date, extracted_actions: snap.extracted_actions,
+          embedding: snap.embedding,
+        }).eq("id", memoryId).eq("user_id", userId);
+        if (error) return JSON.stringify({ error: error.message });
+        return JSON.stringify({ success: true, action: "reverted", title: snap.title });
+      } else {
+        // Memory was deleted: re-insert it
+        const { error } = await supabase.from("memory_notes").insert({
+          id: memoryId, user_id: userId,
+          title: snap.title, content: snap.content, category: snap.category,
+          mood: snap.mood, tags: snap.tags, reminder_date: snap.reminder_date,
+          is_recurring: snap.is_recurring, recurrence_type: snap.recurrence_type,
+          capsule_unlock_date: snap.capsule_unlock_date, extracted_actions: snap.extracted_actions,
+          embedding: snap.embedding, created_at: snap.created_at,
+        });
+        if (error) return JSON.stringify({ error: error.message });
+        return JSON.stringify({ success: true, action: "restored_deleted", title: snap.title });
+      }
+    }
+
+    case "undo_last_action": {
+      let q = supabase.from("memory_history")
+        .select("id, memory_id, action, snapshot, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (args.memory_id) q = q.eq("memory_id", args.memory_id);
+
+      const { data } = await q;
+      if (!data || data.length === 0) return JSON.stringify({ error: "No history found to undo" });
+
+      const entry = data[0];
+      // Delegate to restore_memory logic
+      const result = await executeTool("restore_memory", { history_id: entry.id }, supabase, userId, apiKey);
+      return result;
+    }
+
     default:
       return JSON.stringify({ error: "Unknown tool" });
   }
