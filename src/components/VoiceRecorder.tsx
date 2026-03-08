@@ -1,7 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, Square, Loader2, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface VoiceRecorderProps {
   onTranscriptionComplete: (text: string) => void;
@@ -11,45 +10,53 @@ interface VoiceRecorderProps {
 const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onTranscriptionComplete, isProcessing }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [duration, setDuration] = useState(0);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  const recognitionRef = useRef<any>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const transcriptRef = useRef('');
 
   const startRecording = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        stream.getTracks().forEach((t) => t.stop());
-        // Convert to base64 and send for processing
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64 = (reader.result as string).split(',')[1];
-          onTranscriptionComplete(base64);
-        };
-        reader.readAsDataURL(blob);
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-      setDuration(0);
-      intervalRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
-    } catch (err) {
-      console.error('Microphone access denied:', err);
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Speech recognition is not supported in this browser. Please use Chrome or Edge.');
+      return;
     }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    recognitionRef.current = recognition;
+    transcriptRef.current = '';
+
+    recognition.onresult = (event: any) => {
+      let transcript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      transcriptRef.current = transcript;
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error:', event.error);
+      setIsRecording(false);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+
+    recognition.onend = () => {
+      if (transcriptRef.current.trim()) {
+        onTranscriptionComplete(transcriptRef.current.trim());
+      }
+    };
+
+    recognition.start();
+    setIsRecording(true);
+    setDuration(0);
+    intervalRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
   }, [onTranscriptionComplete]);
 
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+    if (recognitionRef.current && isRecording) {
+      recognitionRef.current.stop();
       setIsRecording(false);
       if (intervalRef.current) clearInterval(intervalRef.current);
     }
@@ -102,11 +109,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onTranscriptionComplete, 
 
       <div className="text-center">
         {isRecording && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-1"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-1">
             <p className="text-2xl font-display font-bold text-foreground">{formatDuration(duration)}</p>
             <p className="text-sm text-muted-foreground">Recording... Tap to stop</p>
           </motion.div>
