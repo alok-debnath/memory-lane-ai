@@ -16,15 +16,17 @@ const BottomNav: React.FC = () => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden flex justify-center pointer-events-none">
-      <div className="liquid-glass-bar pointer-events-auto mb-3 mx-auto px-3 py-2 flex items-center justify-around gap-0.5" style={{ width: 'min(80vw, 300px)' }}>
+      <div className="liquid-glass-bar pointer-events-auto mb-3 mx-auto px-2.5 py-1.5 flex items-center justify-center gap-1" style={{ width: 'min(80vw, 300px)' }}>
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
-            <button
+            <motion.button
+              layout
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`relative flex flex-col items-center justify-center h-11 rounded-full transition-all duration-200 active:scale-[0.92] ${
-                isActive ? 'px-4' : 'px-3'
+              transition={{ type: 'spring', stiffness: 500, damping: 35, mass: 0.8 }}
+              className={`relative flex items-center justify-center h-10 rounded-full transition-colors duration-200 active:scale-[0.92] ${
+                isActive ? 'gap-1.5 px-4' : 'w-10'
               }`}
             >
               {isActive && (
@@ -35,32 +37,31 @@ const BottomNav: React.FC = () => {
                 />
               )}
               <motion.div
-                animate={{ y: isActive ? -1 : 0 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                className="relative z-10 flex flex-col items-center"
+                layout
+                transition={{ type: 'spring', stiffness: 500, damping: 35, mass: 0.8 }}
+                className="relative z-10 flex items-center gap-1.5"
               >
                 <item.icon
-                  className={`w-[20px] h-[20px] transition-all duration-200 ${
-                    isActive ? 'text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.4)]' : 'text-muted-foreground'
+                  className={`w-[20px] h-[20px] transition-colors duration-200 ${
+                    isActive ? 'text-primary' : 'text-muted-foreground'
                   }`}
-                  strokeWidth={isActive ? 2.4 : 1.6}
-                  fill={isActive ? 'hsl(var(--primary) / 0.15)' : 'none'}
+                  strokeWidth={isActive ? 2.2 : 1.6}
                 />
                 <AnimatePresence>
                   {isActive && (
                     <motion.span
-                      initial={{ opacity: 0, height: 0, y: 4 }}
-                      animate={{ opacity: 1, height: 'auto', y: 0 }}
-                      exit={{ opacity: 0, height: 0, y: 4 }}
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: 'auto' }}
+                      exit={{ opacity: 0, width: 0 }}
                       transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
-                      className="text-[9px] font-bold text-primary mt-0.5 leading-none tracking-wide"
+                      className="text-[11px] font-bold text-primary leading-none tracking-tight whitespace-nowrap overflow-hidden"
                     >
                       {item.label}
                     </motion.span>
                   )}
                 </AnimatePresence>
               </motion.div>
-            </button>
+            </motion.button>
           );
         })}
       </div>
