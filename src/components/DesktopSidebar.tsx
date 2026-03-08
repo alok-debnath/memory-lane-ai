@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Home, Bell, User, Brain, LogOut, Clock, BarChart3, FileText, Network, RotateCcw, Plus } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
+import { NewMemoryContext } from './AppLayout';
 
 const mainNav = [
   { path: '/', icon: Home, label: 'Dashboard' },
@@ -21,6 +22,7 @@ const DesktopSidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { open: openNewMemory } = useContext(NewMemoryContext);
 
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] || 'User';
 
@@ -56,10 +58,8 @@ const DesktopSidebar: React.FC = () => {
       {/* New Memory button */}
       <div className="px-3 pt-3 pb-1">
         <button
-          onClick={() => navigate('/record')}
-          className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all btn-gradient ${
-            location.pathname === '/record' ? 'ring-2 ring-primary/30' : ''
-          }`}
+          onClick={openNewMemory}
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all btn-gradient"
         >
           <Plus className="w-[18px] h-[18px]" strokeWidth={2.2} />
           New Memory
