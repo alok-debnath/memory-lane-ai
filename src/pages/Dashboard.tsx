@@ -5,7 +5,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import MemoryCard, { type MemoryNote } from '@/components/MemoryCard';
 import EditMemoryDialog from '@/components/EditMemoryDialog';
-import { Brain, Search, Bell, Mic, Sparkles, Plus } from 'lucide-react';
+import DailyFlashback from '@/components/DailyFlashback';
+import { Brain, Search, Bell, Sparkles } from 'lucide-react';
 import ExportMemories from '@/components/ExportMemories';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -13,11 +14,7 @@ import { isAfter, isBefore, addDays, format } from 'date-fns';
 import ThemeToggle from '@/components/ThemeToggle';
 
 const categoryEmoji: Record<string, string> = {
-  personal: '🏠',
-  work: '💼',
-  finance: '💰',
-  health: '❤️',
-  other: '📝',
+  personal: '🏠', work: '💼', finance: '💰', health: '❤️', other: '📝',
 };
 
 const Dashboard: React.FC = () => {
@@ -36,12 +33,12 @@ const Dashboard: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('memory_notes')
-        .select('id, title, content, category, reminder_date, is_recurring, recurrence_type, created_at, updated_at, user_id')
+        .select('id, title, content, category, reminder_date, is_recurring, recurrence_type, created_at, updated_at, user_id, mood, capsule_unlock_date, extracted_actions')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as MemoryNote[];
     },
-    staleTime: 30_000, // 30s before refetch
+    staleTime: 30_000,
   });
 
   const deleteMutation = useMutation({
@@ -65,7 +62,6 @@ const Dashboard: React.FC = () => {
       if (error) throw error;
       setSemanticResults(data.results || []);
     } catch {
-      // Fallback to local keyword search
       setSemanticResults(
         notes.filter((n) =>
           n.title.toLowerCase().includes(query.toLowerCase()) ||
@@ -91,7 +87,6 @@ const Dashboard: React.FC = () => {
   const categories = [...new Set(notes.map((n) => n.category || 'other'))];
 
   let displayNotes = semanticResults !== null ? semanticResults : notes;
-
   if (categoryFilter) {
     displayNotes = displayNotes.filter((n) => (n.category || 'other') === categoryFilter);
   }
@@ -126,6 +121,9 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Daily Flashback */}
+      <DailyFlashback />
 
       {/* Upcoming reminders */}
       {upcomingReminders.length > 0 && (

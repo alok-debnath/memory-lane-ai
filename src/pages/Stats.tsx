@@ -2,14 +2,26 @@ import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { type MemoryNote } from '@/components/MemoryCard';
-import { BarChart3, Flame, Brain, Calendar, TrendingUp } from 'lucide-react';
+import { BarChart3, Flame, Brain, TrendingUp, Heart } from 'lucide-react';
 import { format, subDays, startOfDay, differenceInCalendarDays, eachDayOfInterval } from 'date-fns';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, PieChart, Pie } from 'recharts';
 import { motion } from 'framer-motion';
 import ExportMemories from '@/components/ExportMemories';
 
 const categoryEmoji: Record<string, string> = {
   personal: '🏠', work: '💼', finance: '💰', health: '❤️', other: '📝',
+};
+
+const moodEmoji: Record<string, string> = {
+  happy: '😊', sad: '😢', anxious: '😰', excited: '🤩', neutral: '😐',
+  grateful: '🙏', frustrated: '😤', hopeful: '🌟', nostalgic: '💭', motivated: '💪',
+};
+
+const moodColors: Record<string, string> = {
+  happy: 'hsl(45, 90%, 55%)', sad: 'hsl(220, 60%, 55%)', anxious: 'hsl(30, 70%, 55%)',
+  excited: 'hsl(330, 80%, 55%)', neutral: 'hsl(0, 0%, 60%)', grateful: 'hsl(160, 60%, 45%)',
+  frustrated: 'hsl(0, 65%, 55%)', hopeful: 'hsl(50, 80%, 50%)', nostalgic: 'hsl(270, 50%, 55%)',
+  motivated: 'hsl(200, 70%, 50%)',
 };
 
 const Stats: React.FC = () => {
@@ -18,7 +30,7 @@ const Stats: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('memory_notes')
-        .select('id, title, content, category, reminder_date, is_recurring, recurrence_type, created_at, updated_at, user_id')
+        .select('id, title, content, category, reminder_date, is_recurring, recurrence_type, created_at, updated_at, user_id, mood, capsule_unlock_date, extracted_actions')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as MemoryNote[];
@@ -39,8 +51,37 @@ const Stats: React.FC = () => {
       .map(([name, count]) => ({ name, count, emoji: categoryEmoji[name] || '📝' }))
       .sort((a, b) => b.count - a.count);
 
-    // Weekly activity (last 7 days)
+    // Mood breakdown
+    const moodCounts: Record<string, number> = {};
+    notes.forEach((n) => {
+      if (n.mood) moodCounts[n.mood] = (moodCounts[n.mood] || 0) + 1;
+    });
+    const moods = Object.entries(moodCounts)
+      .map(([name, count]) => ({
+        name,
+        count,
+        emoji: moodEmoji[name] || '😐',
+        fill: moodColors[name] || 'hsl(var(--primary))',
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    // Mood trend (last 14 days)
     const today = startOfDay(new Date());
+    const trendDays = eachDayOfInterval({ start: subDays(today, 13), end: today });
+    const moodValues: Record<string, number> = {
+      happy: 5, excited: 5, grateful: 4, motivated: 4, hopeful: 3,
+      neutral: 3, nostalgic: 2, anxious: 2, frustrated: 1, sad: 1,
+    };
+    const moodTrend = trendDays.map((day) => {
+      const dayStr = format(day, 'yyyy-MM-dd');
+      const dayNotes = notes.filter((n) => format(new Date(n.created_at), 'yyyy-MM-dd') === dayStr && n.mood);
+      const avgMood = dayNotes.length > 0
+        ? dayNotes.reduce((sum, n) => sum + (moodValues[n.mood!] || 3), 0) / dayNotes.length
+        : 0;
+      return { day: format(day, 'EEE'), value: Math.round(avgMood * 10) / 10, count: dayNotes.length };
+    });
+
+    // Weekly activity
     const weekDays = eachDayOfInterval({ start: subDays(today, 6), end: today });
     const weeklyActivity = weekDays.map((day) => {
       const dayStr = format(day, 'yyyy-MM-dd');
@@ -48,7 +89,7 @@ const Stats: React.FC = () => {
       return { day: format(day, 'EEE'), count };
     });
 
-    // Streak calculation
+    // Streak
     let streak = 0;
     let checkDate = today;
     while (true) {
@@ -60,11 +101,16 @@ const Stats: React.FC = () => {
       checkDate = subDays(checkDate, 1);
     }
 
-    // Total memories this week/month
     const thisWeek = notes.filter((n) => differenceInCalendarDays(today, new Date(n.created_at)) <= 7).length;
     const thisMonth = notes.filter((n) => differenceInCalendarDays(today, new Date(n.created_at)) <= 30).length;
 
-    return { categories, weeklyActivity, streak, thisWeek, thisMonth, total: notes.length };
+    // Total actions extracted
+    const totalActions = notes.reduce((sum, n) => sum + (n.extracted_actions?.length || 0), 0);
+
+    // Dominant mood
+    const dominantMood = moods.length > 0 ? moods[0] : null;
+
+    return { categories, weeklyActivity, streak, thisWeek, thisMonth, total: notes.length, moods, moodTrend, totalActions, dominantMood };
   }, [notes]);
 
   if (isLoading) {
@@ -127,6 +173,70 @@ const Stats: React.FC = () => {
           </motion.div>
         ))}
       </div>
+
+      {/* Mood Overview */}
+      {stats.moods.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="native-card-elevated p-4"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <Heart className="w-4 h-4 text-primary" />
+            <p className="section-label">Mood Tracker</p>
+            {stats.dominantMood && (
+              <span className="text-sm ml-auto">{stats.dominantMood.emoji} {stats.dominantMood.name}</span>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {stats.moods.slice(0, 6).map((m) => (
+              <div key={m.name} className="flex items-center gap-1.5 bg-secondary/50 rounded-lg px-2.5 py-1.5">
+                <span className="text-sm">{m.emoji}</span>
+                <span className="text-[12px] font-medium text-foreground capitalize">{m.name}</span>
+                <span className="text-[11px] text-muted-foreground">({m.count})</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Mood trend line (bar chart showing mood scores) */}
+          {stats.moodTrend.some((d) => d.value > 0) && (
+            <div className="h-[120px] mt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.moodTrend} barCategoryGap="20%">
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                  <YAxis hide domain={[0, 5]} />
+                  <Tooltip
+                    cursor={false}
+                    contentStyle={{
+                      background: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                    }}
+                    formatter={(value: number) => {
+                      const labels = ['', 'Low', 'Below avg', 'Neutral', 'Good', 'Great'];
+                      return [labels[Math.round(value)] || value, 'Mood'];
+                    }}
+                  />
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={24}>
+                    {stats.moodTrend.map((entry, index) => {
+                      const hue = entry.value >= 4 ? 140 : entry.value >= 3 ? 45 : entry.value >= 2 ? 30 : 0;
+                      return (
+                        <Cell
+                          key={index}
+                          fill={entry.value > 0 ? `hsl(${hue}, 60%, 50%)` : 'hsl(var(--muted))'}
+                          opacity={entry.value > 0 ? 0.85 : 0.3}
+                        />
+                      );
+                    })}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </motion.div>
+      )}
 
       {/* Weekly activity chart */}
       <motion.div
@@ -203,16 +313,20 @@ const Stats: React.FC = () => {
       {/* Monthly summary */}
       <div className="native-card p-4">
         <p className="section-label mb-2">30-Day Summary</p>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div>
             <p className="text-2xl font-display font-bold text-foreground">{stats.thisMonth}</p>
-            <p className="text-[11px] text-muted-foreground">memories created</p>
+            <p className="text-[11px] text-muted-foreground">memories</p>
           </div>
           <div>
             <p className="text-2xl font-display font-bold text-foreground">
               {Math.round(stats.thisMonth / 30 * 10) / 10}
             </p>
-            <p className="text-[11px] text-muted-foreground">avg per day</p>
+            <p className="text-[11px] text-muted-foreground">avg/day</p>
+          </div>
+          <div>
+            <p className="text-2xl font-display font-bold text-foreground">{stats.totalActions}</p>
+            <p className="text-[11px] text-muted-foreground">actions</p>
           </div>
         </div>
       </div>

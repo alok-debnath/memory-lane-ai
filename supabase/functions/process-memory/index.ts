@@ -14,7 +14,6 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     // Run AI extraction and embedding generation in parallel
-    // We start embedding generation early with the raw input while AI processes
     const extractPromise = fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -26,7 +25,11 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an AI assistant that processes memory notes. Extract structured data from the user's input. Today's date: ${new Date().toISOString()}`
+            content: `You are an AI assistant that processes memory notes. Extract structured data from the user's input. Today's date: ${new Date().toISOString()}.
+            
+For mood: analyze the emotional tone and assign one of: happy, sad, anxious, excited, neutral, grateful, frustrated, hopeful, nostalgic, motivated.
+
+For extracted_actions: identify any actionable items, tasks, or key facts. Each action should have a "text" (description) and "type" (one of: task, reminder, fact, decision).`
           },
           { role: "user", content: input },
         ],
@@ -44,8 +47,21 @@ serve(async (req) => {
                 is_recurring: { type: "boolean" },
                 recurrence_type: { type: "string", enum: ["yearly", "monthly", "weekly", "daily"], description: "null if not recurring" },
                 category: { type: "string", enum: ["personal", "work", "finance", "health", "other"] },
+                mood: { type: "string", enum: ["happy", "sad", "anxious", "excited", "neutral", "grateful", "frustrated", "hopeful", "nostalgic", "motivated"], description: "Detected emotional tone of the memory" },
+                extracted_actions: {
+                  type: "array",
+                  description: "Actionable items, tasks, or key facts extracted from input",
+                  items: {
+                    type: "object",
+                    properties: {
+                      text: { type: "string" },
+                      type: { type: "string", enum: ["task", "reminder", "fact", "decision"] },
+                    },
+                    required: ["text", "type"],
+                  },
+                },
               },
-              required: ["title", "content", "is_recurring", "category"],
+              required: ["title", "content", "is_recurring", "category", "mood"],
               additionalProperties: false,
             },
           },
@@ -54,7 +70,6 @@ serve(async (req) => {
       }),
     });
 
-    // Pre-generate embedding from raw input (will be close enough for search)
     const earlyEmbeddingPromise = fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
       method: "POST",
       headers: {
@@ -91,7 +106,6 @@ serve(async (req) => {
 
     const parsed = JSON.parse(toolCall.function.arguments);
 
-    // Use early embedding (from raw input) — close enough semantically and saves ~200ms
     let embedding = null;
     if (earlyEmbResponse.ok) {
       const embData = await earlyEmbResponse.json();
