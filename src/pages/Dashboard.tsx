@@ -61,13 +61,12 @@ const Dashboard: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['memory-notes'] });
       toast({
         title: 'Memory deleted',
-        description: 'You can undo this within 7 days via AI chat or history.',
+        description: 'You can undo this within 7 days.',
         action: (
-          <button
-            className="text-[13px] font-semibold text-primary hover:underline"
+          <ToastAction
+            altText="Undo delete"
             onClick={async () => {
               try {
-                // Get the latest history entry for this memory (the delete snapshot)
                 const { data: history } = await supabase
                   .from('memory_history' as any)
                   .select('id, snapshot')
@@ -94,13 +93,13 @@ const Dashboard: React.FC = () => {
                   queryClient.invalidateQueries({ queryKey: ['memory-notes'] });
                   toast({ title: 'Memory restored!' });
                 }
-              } catch (err) {
+              } catch {
                 toast({ title: 'Failed to restore', variant: 'destructive' });
               }
             }}
           >
             Undo
-          </button>
+          </ToastAction>
         ),
       });
     },
