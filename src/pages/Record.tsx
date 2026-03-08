@@ -3,17 +3,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import VoiceRecorder from '@/components/VoiceRecorder';
 import TextNoteInput from '@/components/TextNoteInput';
 import MemoryTemplates, { type MemoryTemplate } from '@/components/MemoryTemplates';
+import CapsuleDatePicker from '@/components/CapsuleDatePicker';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { Mic, PenLine, Lightbulb, LayoutTemplate } from 'lucide-react';
+import { Mic, PenLine, Lightbulb, LayoutTemplate, CheckCircle2 } from 'lucide-react';
 
 const Record: React.FC = () => {
   const [mode, setMode] = useState<'voice' | 'text' | 'template'>('voice');
   const [isProcessing, setIsProcessing] = useState(false);
   const [templatePrefill, setTemplatePrefill] = useState<{ text: string; category: string } | null>(null);
+  const [capsuleDate, setCapsuleDate] = useState<string | null>(null);
+  const [lastActions, setLastActions] = useState<any[] | null>(null);
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -21,6 +24,7 @@ const Record: React.FC = () => {
 
   const processNote = async (input: string, isAudio: boolean, categoryOverride?: string) => {
     setIsProcessing(true);
+    setLastActions(null);
     try {
       const { data, error } = await supabase.functions.invoke('process-memory', {
         body: { input, isAudio },
@@ -36,6 +40,9 @@ const Record: React.FC = () => {
         recurrence_type: data.recurrence_type || null,
         category: categoryOverride || data.category || 'other',
         user_id: user!.id,
+        mood: data.mood || null,
+        extracted_actions: data.extracted_actions || null,
+        capsule_unlock_date: capsuleDate ? new Date(capsuleDate).toISOString() : null,
       };
       if (data.embedding) {
         insertPayload.embedding = data.embedding;
@@ -45,9 +52,22 @@ const Record: React.FC = () => {
       if (insertError) throw insertError;
 
       queryClient.invalidateQueries({ queryKey: ['memory-notes'] });
-      toast({ title: 'Memory saved!', description: data.title });
+
+      // Show extracted actions feedback
+      const actions = data.extracted_actions;
+      if (actions && actions.length > 0) {
+        setLastActions(actions);
+        toast({
+          title: '✨ Memory saved!',
+          description: `${data.title} — ${actions.length} action${actions.length !== 1 ? 's' : ''} extracted`,
+        });
+      } else {
+        toast({ title: 'Memory saved!', description: data.title });
+        navigate('/');
+      }
+
       setTemplatePrefill(null);
-      navigate('/');
+      setCapsuleDate(null);
     } catch (err: any) {
       console.error('Process error:', err);
       toast({ title: 'Error', description: err.message || 'Failed to process memory', variant: 'destructive' });
@@ -95,6 +115,9 @@ const Record: React.FC = () => {
         ))}
       </div>
 
+      {/* Capsule Date Picker */}
+      <CapsuleDatePicker value={capsuleDate} onChange={setCapsuleDate} />
+
       {/* Input Area */}
       <div className="flex items-center justify-center min-h-[280px]">
         <AnimatePresence mode="wait">
@@ -121,6 +144,29 @@ const Record: React.FC = () => {
         </AnimatePresence>
       </div>
 
+      {/* Extracted Actions Feedback */}
+      {lastActions && lastActions.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="native-card-elevated p-4 space-y-2">
+          <p className="text-[13px] font-semibold text-foreground flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-primary" />
+            Extracted Actions
+          </p>
+          {lastActions.map((action: any, i: number) => (
+            <div key={i} className="flex items-center gap-2 text-[13px] text-muted-foreground">
+              <span className="text-primary">•</span>
+              <span>{action.text}</span>
+              <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded-md capitalize">{action.type}</span>
+            </div>
+          ))}
+          <button
+            onClick={() => { setLastActions(null); navigate('/'); }}
+            className="text-[13px] text-primary font-medium mt-2"
+          >
+            Go to Dashboard →
+          </button>
+        </motion.div>
+      )}
+
       {/* Tips */}
       <div className="native-card p-4">
         <div className="flex items-center gap-2 mb-2.5">
@@ -129,8 +175,9 @@ const Record: React.FC = () => {
         </div>
         <ul className="space-y-1.5 text-[13px] text-muted-foreground">
           <li>• "Remind me to renew my passport on March 15 every year"</li>
-          <li>• "Remember to buy flowers for mom's birthday June 3rd"</li>
-          <li>• "Note: WiFi password for the office is starlight42"</li>
+          <li>• "Meeting notes: decided to launch Q2, assign design to Sarah"</li>
+          <li>• "WiFi password for the office is starlight42"</li>
+          <li>• Enable Time Capsule to lock a memory until a future date 🔒</li>
         </ul>
       </div>
     </div>

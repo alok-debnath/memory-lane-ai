@@ -1,23 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Save, Mic, Square, Sparkles, Pencil, Volume2 } from 'lucide-react';
+import { Loader2, Save, Mic, Square, Sparkles, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -26,6 +19,8 @@ import { type MemoryNote } from '@/components/MemoryCard';
 import FileUploader from '@/components/FileUploader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import RelatedMemories from '@/components/RelatedMemories';
+import ExtractedActions from '@/components/ExtractedActions';
+import CapsuleDatePicker from '@/components/CapsuleDatePicker';
 
 interface EditMemoryDialogProps {
   note: MemoryNote | null;
@@ -37,6 +32,10 @@ const categories = ['personal', 'work', 'finance', 'health', 'other'];
 const recurrenceTypes = ['daily', 'weekly', 'monthly', 'yearly'];
 const categoryEmoji: Record<string, string> = {
   personal: '🏠', work: '💼', finance: '💰', health: '💊', other: '📝',
+};
+const moodEmoji: Record<string, string> = {
+  happy: '😊', sad: '😢', anxious: '😰', excited: '🤩', neutral: '😐',
+  grateful: '🙏', frustrated: '😤', hopeful: '🌟', nostalgic: '💭', motivated: '💪',
 };
 
 const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenChange }) => {
@@ -55,6 +54,7 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
   const [reminderDate, setReminderDate] = useState('');
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrenceType, setRecurrenceType] = useState('');
+  const [capsuleDate, setCapsuleDate] = useState<string | null>(null);
   const [existingFiles, setExistingFiles] = useState<any[]>([]);
 
   useEffect(() => {
@@ -65,6 +65,7 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
       setReminderDate(note.reminder_date ? note.reminder_date.slice(0, 16) : '');
       setIsRecurring(note.is_recurring);
       setRecurrenceType(note.recurrence_type || '');
+      setCapsuleDate(note.capsule_unlock_date ? note.capsule_unlock_date.slice(0, 10) : null);
       setLiveVoice('');
 
       supabase
@@ -95,6 +96,7 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
           reminder_date: reminderDate || null,
           is_recurring: isRecurring,
           recurrence_type: isRecurring ? recurrenceType : null,
+          capsule_unlock_date: capsuleDate ? new Date(capsuleDate).toISOString() : null,
         })
         .eq('id', note.id);
       if (error) throw error;
@@ -191,9 +193,16 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
               <div className="w-10 h-10 rounded-xl bg-accent/80 flex items-center justify-center text-lg">
                 {categoryEmoji[note.category || 'other']}
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <DialogTitle className="text-[16px] font-display leading-tight">{note.title}</DialogTitle>
-                <p className="text-[11px] text-muted-foreground mt-0.5 capitalize">{note.category || 'other'}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-[11px] text-muted-foreground capitalize">{note.category || 'other'}</p>
+                  {note.mood && moodEmoji[note.mood] && (
+                    <span className="text-[11px] text-muted-foreground">
+                      {moodEmoji[note.mood]} {note.mood}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </DialogHeader>
@@ -317,6 +326,14 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
                 </Select>
               )}
 
+              {/* Time Capsule */}
+              <CapsuleDatePicker value={capsuleDate} onChange={setCapsuleDate} />
+
+              {/* Extracted Actions */}
+              {note.extracted_actions && note.extracted_actions.length > 0 && (
+                <ExtractedActions actions={note.extracted_actions} />
+              )}
+
               <div className="space-y-1">
                 <Label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Attachments</Label>
                 <FileUploader memoryId={note.id} existingFiles={existingFiles} />
@@ -327,11 +344,9 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
                 Save
               </Button>
 
-              {/* Related memories */}
               <RelatedMemories
                 note={note}
                 onSelect={(related) => {
-                  // Load the related memory into the form
                   setTitle(related.title);
                   setContent(related.content);
                   setCategory(related.category || 'other');
