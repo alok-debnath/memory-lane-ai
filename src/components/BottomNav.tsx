@@ -18,14 +18,14 @@ const BottomNav: React.FC = () => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden flex justify-center pointer-events-none">
-      <div className="liquid-glass-bar pointer-events-auto mb-3 mx-auto px-2 py-1.5 flex items-center justify-around" style={{ width: 'min(80vw, 300px)' }}>
+      <div className="liquid-glass-bar pointer-events-auto mb-3 mx-auto px-2 py-1.5 flex items-center justify-around" style={{ width: 'min(85vw, 320px)' }}>
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className="relative flex flex-col items-center justify-center w-14 h-11 rounded-full active:scale-[0.92]"
+              className="relative flex flex-col items-center justify-center w-16 h-12 rounded-full active:scale-[0.92]"
             >
               {isActive && (
                 <motion.div
