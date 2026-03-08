@@ -60,6 +60,7 @@ export type Database = {
           category: string | null
           content: string
           created_at: string
+          embedding: string | null
           id: string
           is_recurring: boolean
           recurrence_type: string | null
@@ -72,6 +73,7 @@ export type Database = {
           category?: string | null
           content: string
           created_at?: string
+          embedding?: string | null
           id?: string
           is_recurring?: boolean
           recurrence_type?: string | null
@@ -84,6 +86,7 @@ export type Database = {
           category?: string | null
           content?: string
           created_at?: string
+          embedding?: string | null
           id?: string
           is_recurring?: boolean
           recurrence_type?: string | null
@@ -99,7 +102,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      match_memories: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          p_user_id?: string
+          query_embedding: string
+        }
+        Returns: {
+          category: string
+          content: string
+          created_at: string
+          id: string
+          is_recurring: boolean
+          recurrence_type: string
+          reminder_date: string
+          similarity: number
+          title: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
