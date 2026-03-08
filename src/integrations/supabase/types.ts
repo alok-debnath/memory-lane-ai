@@ -102,6 +102,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      fuzzy_search_memories: {
+        Args: {
+          max_results?: number
+          p_user_id: string
+          search_query: string
+          similarity_threshold?: number
+        }
+        Returns: {
+          category: string
+          content: string
+          created_at: string
+          fuzzy_score: number
+          id: string
+          is_recurring: boolean
+          recurrence_type: string
+          reminder_date: string
+          title: string
+        }[]
+      }
       match_memories: {
         Args: {
           match_count?: number
@@ -121,6 +140,8 @@ export type Database = {
           title: string
         }[]
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never
