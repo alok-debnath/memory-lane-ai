@@ -8,6 +8,7 @@ import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
+import Diary from "./pages/Diary";
 
 import Timeline from "./pages/Timeline";
 import Reminders from "./pages/Reminders";
@@ -62,7 +63,7 @@ const App = () => (
             <Route path="/shared/:token" element={<SharedMemory />} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />
-              
+              <Route path="/diary" element={<Diary />} />
               <Route path="/timeline" element={<Timeline />} />
               <Route path="/reminders" element={<Reminders />} />
               <Route path="/stats" element={<Stats />} />

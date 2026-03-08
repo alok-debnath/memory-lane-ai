@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Plus, FileText, RotateCcw, MoreHorizontal, Network, BarChart3, User, Bell, X } from 'lucide-react';
+import { Home, Plus, FileText, RotateCcw, MoreHorizontal, Network, BarChart3, User, Bell, X, BookOpen } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useCommandPanel } from './AppLayout';
 
 const primaryItems = [
   { path: '/', icon: Home, label: 'Home' },
-  { path: '/documents', icon: FileText, label: 'Docs' },
+  { path: '/diary', icon: BookOpen, label: 'Diary' },
 ];
 
 const rightItems = [
@@ -14,6 +14,7 @@ const rightItems = [
 ];
 
 const moreItems = [
+  { path: '/documents', icon: FileText, label: 'Documents' },
   { path: '/timeline', icon: Bell, label: 'Timeline' },
   { path: '/reminders', icon: Bell, label: 'Reminders' },
   { path: '/graph', icon: Network, label: 'Knowledge Graph' },

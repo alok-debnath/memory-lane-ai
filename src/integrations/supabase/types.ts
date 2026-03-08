@@ -14,6 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_nudges: {
+        Row: {
+          based_on: Json | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_acted_on: boolean
+          is_dismissed: boolean
+          message: string
+          nudge_type: string
+          priority: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          based_on?: Json | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_acted_on?: boolean
+          is_dismissed?: boolean
+          message: string
+          nudge_type?: string
+          priority?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          based_on?: Json | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_acted_on?: boolean
+          is_dismissed?: boolean
+          message?: string
+          nudge_type?: string
+          priority?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      diary_entries: {
+        Row: {
+          created_at: string
+          energy_level: string | null
+          habits_detected: Json | null
+          id: string
+          mood: string | null
+          personality_traits: Json | null
+          raw_text: string
+          structured_insights: Json | null
+          topics: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          energy_level?: string | null
+          habits_detected?: Json | null
+          id?: string
+          mood?: string | null
+          personality_traits?: Json | null
+          raw_text: string
+          structured_insights?: Json | null
+          topics?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          energy_level?: string | null
+          habits_detected?: Json | null
+          id?: string
+          mood?: string | null
+          personality_traits?: Json | null
+          raw_text?: string
+          structured_insights?: Json | null
+          topics?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       document_extractions: {
         Row: {
           attachment_id: string
