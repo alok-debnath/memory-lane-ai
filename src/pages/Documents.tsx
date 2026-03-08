@@ -317,9 +317,20 @@ const Documents: React.FC = () => {
           <h3 className="font-display font-semibold text-foreground text-base">
             {search ? 'No matches' : 'No documents yet'}
           </h3>
-          <p className="text-[13px] text-muted-foreground mt-1">
-            {search ? 'Try different search terms' : 'Upload warranty cards, receipts, or documents to any memory'}
+          <p className="text-[13px] text-muted-foreground mt-1 mb-3">
+            {search ? 'Try different search terms' : 'Upload warranty cards, receipts, invoices, or any documents'}
           </p>
+          {!search && (
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              variant="outline"
+              className="border-dashed border-2"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Upload your first document
+            </Button>
+          )}
         </div>
       ) : (
         <div className="native-group">
