@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, Square, Loader2, Sparkles } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface VoiceRecorderProps {
   onTranscriptionComplete: (text: string) => void;
@@ -13,11 +14,30 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onTranscriptionComplete, 
   const recognitionRef = useRef<any>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const transcriptRef = useRef('');
+  const { toast } = useToast();
 
   const startRecording = useCallback(async () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('Speech recognition is not supported in this browser. Please use Chrome or Edge.');
+      toast({
+        title: 'Not supported',
+        description: 'Speech recognition requires Chrome, Edge, or Safari. Please use one of those browsers.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Request microphone permission first
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Stop the stream immediately - we just needed permission
+      stream.getTracks().forEach(track => track.stop());
+    } catch (err) {
+      toast({
+        title: 'Microphone access denied',
+        description: 'Please allow microphone access in your browser settings to use voice recording.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -38,21 +58,39 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onTranscriptionComplete, 
 
     recognition.onerror = (event: any) => {
       console.error('Speech recognition error:', event.error);
+      if (event.error === 'not-allowed') {
+        toast({
+          title: 'Microphone blocked',
+          description: 'Please enable microphone access in your browser settings.',
+          variant: 'destructive',
+        });
+      }
       setIsRecording(false);
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
 
     recognition.onend = () => {
+      setIsRecording(false);
+      if (intervalRef.current) clearInterval(intervalRef.current);
       if (transcriptRef.current.trim()) {
         onTranscriptionComplete(transcriptRef.current.trim());
       }
     };
 
-    recognition.start();
-    setIsRecording(true);
-    setDuration(0);
-    intervalRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
-  }, [onTranscriptionComplete]);
+    try {
+      recognition.start();
+      setIsRecording(true);
+      setDuration(0);
+      intervalRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
+    } catch (err) {
+      console.error('Failed to start recognition:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to start voice recognition. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  }, [onTranscriptionComplete, toast]);
 
   const stopRecording = useCallback(() => {
     if (recognitionRef.current && isRecording) {

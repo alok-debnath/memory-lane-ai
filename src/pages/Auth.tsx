@@ -166,7 +166,18 @@ const Auth: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-foreground font-medium">Password</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password" className="text-foreground font-medium">Password</Label>
+                    {isLogin && (
+                      <button
+                        type="button"
+                        onClick={() => navigate('/forgot-password')}
+                        className="text-xs text-primary hover:underline font-medium"
+                      >
+                        Forgot password?
+                      </button>
+                    )}
+                  </div>
                   <Input
                     id="password"
                     type="password"
