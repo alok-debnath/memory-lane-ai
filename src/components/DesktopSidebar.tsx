@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Bell, User, Brain, LogOut, Clock, BarChart3, FileText, Network, RotateCcw } from 'lucide-react';
+import { Home, Bell, User, Brain, LogOut, Clock, BarChart3, FileText, Network, RotateCcw, BookOpen } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
