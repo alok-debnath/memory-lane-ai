@@ -1,6 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Loader2, Bot, User, Sparkles } from 'lucide-react';
+import {
+  Mic, Square, X, Send, Loader2, Bot, User, Sparkles,
+  Keyboard, MicOff,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,27 +21,42 @@ const AIChatPanel: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<'voice' | 'text'>('voice');
+  const [isListening, setIsListening] = useState(false);
+  const [liveTranscript, setLiveTranscript] = useState('');
+  const [duration, setDuration] = useState(0);
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const transcriptRef = useRef('');
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, liveTranscript]);
 
   useEffect(() => {
-    if (open && inputRef.current) {
+    if (open && mode === 'text' && inputRef.current) {
       inputRef.current.focus();
     }
-  }, [open]);
+  }, [open, mode]);
 
-  const sendMessage = async () => {
-    if (!input.trim() || loading || !user) return;
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) recognitionRef.current.abort();
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
 
-    const userMsg: Message = { role: 'user', content: input.trim() };
+  const sendToAI = async (text: string) => {
+    if (!text.trim() || loading || !user) return;
+
+    const userMsg: Message = { role: 'user', content: text.trim() };
     const allMessages = [...messages, userMsg];
     setMessages(allMessages);
     setInput('');
@@ -58,7 +76,6 @@ const AIChatPanel: React.FC = () => {
         setMessages([...allMessages, { role: 'assistant', content: `⚠️ ${data.error}` }]);
       } else {
         setMessages([...allMessages, { role: 'assistant', content: data.reply }]);
-        // If AI mutated data, refresh queries
         if (data.mutated) {
           queryClient.invalidateQueries({ queryKey: ['memory-notes'] });
         }
@@ -73,9 +90,77 @@ const AIChatPanel: React.FC = () => {
     }
   };
 
+  const startListening = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: "⚠️ Speech recognition isn't supported in this browser. Please use Chrome or Edge, or switch to text mode." },
+      ]);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    recognitionRef.current = recognition;
+    transcriptRef.current = '';
+    setLiveTranscript('');
+
+    recognition.onresult = (event: any) => {
+      let final = '';
+      let interim = '';
+      for (let i = 0; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          final += event.results[i][0].transcript;
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+      transcriptRef.current = final;
+      setLiveTranscript(final + (interim ? ` ${interim}` : ''));
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error('Speech error:', event.error);
+      setIsListening(false);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      const text = transcriptRef.current.trim();
+      setLiveTranscript('');
+      if (text) {
+        sendToAI(text);
+      }
+    };
+
+    recognition.start();
+    setIsListening(true);
+    setDuration(0);
+    intervalRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
+  }, [messages, user, loading]);
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current && isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    }
+  }, [isListening]);
+
+  const formatDuration = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  };
+
   return (
     <>
-      {/* FAB */}
+      {/* FAB - Voice-first mic button */}
       <AnimatePresence>
         {!open && (
           <motion.div
@@ -86,16 +171,16 @@ const AIChatPanel: React.FC = () => {
           >
             <Button
               onClick={() => setOpen(true)}
-              className="h-14 w-14 rounded-full shadow-lg btn-gradient"
+              className="h-16 w-16 rounded-full shadow-xl btn-gradient"
               size="icon"
             >
-              <Sparkles className="w-6 h-6" />
+              <Mic className="w-7 h-7" />
             </Button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Chat Panel */}
+      {/* Voice-first AI Panel */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -103,7 +188,7 @@ const AIChatPanel: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[420px] h-[500px] sm:h-[560px] glass-card-elevated flex flex-col overflow-hidden"
+            className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[420px] h-[600px] sm:h-[620px] glass-card-elevated flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
@@ -113,35 +198,52 @@ const AIChatPanel: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-display font-semibold text-foreground text-sm">Memora AI</h3>
-                  <p className="text-xs text-muted-foreground">Search, create & edit memories</p>
+                  <p className="text-xs text-muted-foreground">Voice-first memory assistant</p>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setOpen(false)} className="h-8 w-8">
-                <X className="w-4 h-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                {/* Voice / Text toggle */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setMode(mode === 'voice' ? 'text' : 'voice')}
+                  className="h-8 w-8"
+                  title={mode === 'voice' ? 'Switch to text' : 'Switch to voice'}
+                >
+                  {mode === 'voice' ? <Keyboard className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => setOpen(false)} className="h-8 w-8">
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
 
-            {/* Messages */}
+            {/* Messages area */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-              {messages.length === 0 && (
-                <div className="text-center py-8">
-                  <Sparkles className="w-10 h-10 text-primary/30 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground">
-                    Ask me anything about your memories!
+              {messages.length === 0 && !isListening && (
+                <div className="text-center py-6">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                    <Mic className="w-8 h-8 text-primary" />
+                  </div>
+                  <h4 className="font-display font-semibold text-foreground text-sm mb-1">
+                    Talk to Memora
+                  </h4>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Speak or type to search, create, and edit your memories
                   </p>
-                  <div className="mt-4 space-y-2">
+                  <div className="space-y-2">
                     {[
                       "What did I save about my passport?",
-                      "Create a reminder for mom's birthday",
-                      "Show my work-related memories",
+                      "Remind me to call the dentist tomorrow",
                       "Update my WiFi password note",
+                      "Show my work memories",
                     ].map((q) => (
                       <button
                         key={q}
-                        onClick={() => { setInput(q); }}
+                        onClick={() => sendToAI(q)}
                         className="block w-full text-left text-xs px-3 py-2 rounded-lg bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
                       >
-                        {q}
+                        "{q}"
                       </button>
                     ))}
                   </div>
@@ -183,6 +285,15 @@ const AIChatPanel: React.FC = () => {
                 </motion.div>
               ))}
 
+              {/* Live transcript while recording */}
+              {isListening && liveTranscript && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-2 justify-end">
+                  <div className="max-w-[80%] rounded-2xl rounded-br-md px-3 py-2 text-sm bg-primary/20 text-foreground italic">
+                    {liveTranscript}
+                  </div>
+                </motion.div>
+              )}
+
               {loading && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-2">
                   <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -199,28 +310,76 @@ const AIChatPanel: React.FC = () => {
               )}
             </div>
 
-            {/* Input */}
+            {/* Input Area - Voice-first */}
             <div className="px-3 py-3 border-t border-border/50">
-              <div className="flex gap-2">
-                <Input
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                  placeholder="Ask about your memories..."
-                  className="h-10 rounded-xl bg-secondary/50 border-border/50 text-sm"
-                  disabled={loading}
-                />
-                <Button
-                  onClick={sendMessage}
-                  disabled={!input.trim() || loading}
-                  size="icon"
-                  className="h-10 w-10 shrink-0 rounded-xl"
-                  variant="gradient"
-                >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                </Button>
-              </div>
+              {mode === 'voice' ? (
+                <div className="flex flex-col items-center gap-2">
+                  <AnimatePresence mode="wait">
+                    {loading ? (
+                      <motion.div
+                        key="processing"
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        className="w-14 h-14 rounded-full bg-accent flex items-center justify-center"
+                      >
+                        <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+                      </motion.div>
+                    ) : isListening ? (
+                      <motion.button
+                        key="listening"
+                        initial={{ scale: 0.8 }}
+                        animate={{ scale: 1 }}
+                        onClick={stopListening}
+                        className="w-14 h-14 rounded-full bg-destructive flex items-center justify-center cursor-pointer pulse-ring"
+                      >
+                        <Square className="w-5 h-5 text-destructive-foreground" />
+                      </motion.button>
+                    ) : (
+                      <motion.button
+                        key="idle"
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={startListening}
+                        className="w-14 h-14 rounded-full btn-gradient flex items-center justify-center cursor-pointer"
+                      >
+                        <Mic className="w-6 h-6 text-primary-foreground" />
+                      </motion.button>
+                    )}
+                  </AnimatePresence>
+                  <p className="text-xs text-muted-foreground">
+                    {isListening
+                      ? `Listening... ${formatDuration(duration)}`
+                      : loading
+                        ? 'Processing...'
+                        : 'Tap to speak'}
+                  </p>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && sendToAI(input)}
+                    placeholder="Type your message..."
+                    className="h-10 rounded-xl bg-secondary/50 border-border/50 text-sm"
+                    disabled={loading}
+                  />
+                  <Button
+                    onClick={() => sendToAI(input)}
+                    disabled={!input.trim() || loading}
+                    size="icon"
+                    className="h-10 w-10 shrink-0 rounded-xl"
+                    variant="gradient"
+                  >
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  </Button>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
