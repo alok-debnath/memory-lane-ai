@@ -166,43 +166,17 @@ const TOOLS = [
   {
     type: "function",
     function: {
-      name: "get_history",
-      description: "Get the edit/delete history for a specific memory or all recent history. Use when the user asks about changes, wants to undo something, or asks 'what did I change/delete recently'.",
+      name: "history",
+      description: "Version control for memories. Actions: 'list' to see recent changes/deletions, 'undo' to revert the last change (optionally for a specific memory_id), 'restore' to restore a specific history_id snapshot.",
       parameters: {
         type: "object",
         properties: {
-          memory_id: { type: "string", description: "Optional: UUID of a specific memory to get history for" },
-          limit: { type: "number", description: "Max history entries to return (default 20)" },
+          action: { type: "string", enum: ["list", "undo", "restore"], description: "What to do" },
+          memory_id: { type: "string", description: "For 'undo': target a specific memory. For 'list': filter by memory." },
+          history_id: { type: "string", description: "For 'restore': the specific snapshot to restore." },
+          limit: { type: "number", description: "For 'list': max entries (default 20)" },
         },
-        additionalProperties: false,
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "restore_memory",
-      description: "Restore a memory from a history snapshot. Use when the user wants to undo a change or restore a deleted memory.",
-      parameters: {
-        type: "object",
-        properties: {
-          history_id: { type: "string", description: "UUID of the history entry to restore from" },
-        },
-        required: ["history_id"],
-        additionalProperties: false,
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "undo_last_action",
-      description: "Undo the most recent change to a specific memory, or the most recent action overall. Shortcut for get_history + restore.",
-      parameters: {
-        type: "object",
-        properties: {
-          memory_id: { type: "string", description: "Optional: UUID of the memory to undo changes for. If omitted, undoes the most recent action globally." },
-        },
+        required: ["action"],
         additionalProperties: false,
       },
     },
