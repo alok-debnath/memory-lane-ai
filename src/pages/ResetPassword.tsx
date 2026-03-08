@@ -100,7 +100,7 @@ const ResetPassword: React.FC = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="text-center py-8"
           >
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+            <CheckCircle className="w-16 h-16 text-primary mx-auto mb-4" />
             <h2 className="text-2xl font-display font-bold text-foreground mb-2">Password Updated!</h2>
             <p className="text-muted-foreground">Redirecting you to the app...</p>
           </motion.div>

@@ -51,8 +51,8 @@ const ForgotPassword: React.FC = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="text-center py-8"
           >
-            <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-8 h-8 text-green-500" />
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-8 h-8 text-primary" />
             </div>
             <h2 className="text-2xl font-display font-bold text-foreground mb-2">Check your email</h2>
             <p className="text-muted-foreground mb-6">
