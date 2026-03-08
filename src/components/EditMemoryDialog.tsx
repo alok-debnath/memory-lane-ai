@@ -25,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { type MemoryNote } from '@/components/MemoryCard';
 import FileUploader from '@/components/FileUploader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import RelatedMemories from '@/components/RelatedMemories';
 
 interface EditMemoryDialogProps {
   note: MemoryNote | null;
