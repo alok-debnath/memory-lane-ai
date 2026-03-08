@@ -8,6 +8,7 @@ import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
+import Record from "./pages/Record";
 import Timeline from "./pages/Timeline";
 import Reminders from "./pages/Reminders";
 import Profile from "./pages/Profile";
