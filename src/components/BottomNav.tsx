@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Plus, FileText, RotateCcw, MoreHorizontal, Network, BarChart3, User, Bell, X } from 'lucide-react';
+import { Home, Plus, FileText, RotateCcw, MoreHorizontal, Network, BarChart3, User, Bell, X, BookOpen } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useCommandPanel } from './AppLayout';
 
