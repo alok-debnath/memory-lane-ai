@@ -10,7 +10,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { query, userId, mode = "hybrid" } = await req.json();
+    const { query, userId } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -18,14 +18,10 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Run keyword search and semantic search in parallel
-    const keywordPromise = supabase
-      .from("memory_notes")
-      .select("id, title, content, category, reminder_date, is_recurring, recurrence_type, created_at, updated_at, user_id")
-      .eq("user_id", userId)
-      .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
-      .order("created_at", { ascending: false })
-      .limit(20);
+    // Run all 3 search layers in parallel:
+    // 1. Vector/semantic search (meaning-based)
+    // 2. Fuzzy search via pg_trgm (typo-tolerant)
+    // 3. Falls back inside fuzzy_search_memories which also does ILIKE
 
     const semanticPromise = (async () => {
       try {
@@ -50,39 +46,69 @@ serve(async (req) => {
 
         const { data: results } = await supabase.rpc("match_memories", {
           query_embedding: queryEmbedding,
-          match_threshold: 0.25,
+          match_threshold: 0.2,
           match_count: 20,
           p_user_id: userId,
         });
 
-        return (results || []).map((r: Record<string, unknown>) => ({ ...r, _similarity: r.similarity }));
+        return (results || []).map((r: Record<string, unknown>) => ({
+          ...r,
+          _score: ((r.similarity as number) || 0) * 1.0, // highest weight for semantic
+          _source: "semantic",
+        }));
       } catch {
         return [];
       }
     })();
 
-    const [keywordResult, semanticResults] = await Promise.all([keywordPromise, semanticPromise]);
-    const keywordResults = (keywordResult.data || []).map((r: Record<string, unknown>) => ({ ...r, _similarity: 0 }));
+    const fuzzyPromise = (async () => {
+      try {
+        const { data: results } = await supabase.rpc("fuzzy_search_memories", {
+          search_query: query,
+          p_user_id: userId,
+          similarity_threshold: 0.12,
+          max_results: 20,
+        });
 
-    // Merge and deduplicate: semantic results ranked higher
-    const seen = new Set<string>();
-    const merged: Record<string, unknown>[] = [];
+        return (results || []).map((r: Record<string, unknown>) => ({
+          ...r,
+          _score: ((r.fuzzy_score as number) || 0) * 0.7, // slightly lower weight
+          _source: "fuzzy",
+        }));
+      } catch {
+        return [];
+      }
+    })();
 
-    // Semantic results first (already ranked by similarity)
-    for (const item of semanticResults) {
-      if (!seen.has(item.id as string)) {
-        seen.add(item.id as string);
-        merged.push(item);
+    const [semanticResults, fuzzyResults] = await Promise.all([semanticPromise, fuzzyPromise]);
+
+    // Merge and deduplicate, keeping highest score per memory
+    const scoreMap = new Map<string, { item: Record<string, unknown>; score: number; sources: string[] }>();
+
+    for (const item of [...semanticResults, ...fuzzyResults]) {
+      const id = item.id as string;
+      const existing = scoreMap.get(id);
+      if (existing) {
+        existing.sources.push(item._source as string);
+        // Boost score when found by multiple methods
+        existing.score = Math.max(existing.score, item._score as number) * 1.1;
+      } else {
+        scoreMap.set(id, {
+          item,
+          score: item._score as number,
+          sources: [item._source as string],
+        });
       }
     }
 
-    // Then keyword results that weren't in semantic
-    for (const item of keywordResults) {
-      if (!seen.has(item.id as string)) {
-        seen.add(item.id as string);
-        merged.push(item);
-      }
-    }
+    // Sort by combined score
+    const merged = Array.from(scoreMap.values())
+      .sort((a, b) => b.score - a.score)
+      .map(({ item, score, sources }) => {
+        // Clean up internal fields
+        const { _score, _source, fuzzy_score, similarity, ...clean } = item as Record<string, unknown>;
+        return { ...clean, _relevance: score, _sources: sources };
+      });
 
     return new Response(JSON.stringify({ results: merged }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
