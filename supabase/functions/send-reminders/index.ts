@@ -59,11 +59,22 @@ serve(async (req) => {
     const tzMap: Record<string, string> = {};
     for (const p of profiles || []) tzMap[p.id] = p.timezone || 'UTC';
 
+    // Fetch notification preferences
+    const { data: notifPrefs } = await supabase.from("notification_preferences").select("user_id, email_enabled").in("user_id", userIds);
+    const emailEnabledMap: Record<string, boolean> = {};
+    for (const pref of notifPrefs || []) emailEnabledMap[pref.user_id] = pref.email_enabled ?? true;
+
     let sentCount = 0;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     // Process all users in parallel
     await Promise.all(Object.entries(userReminders).map(async ([userId, reminders]) => {
+      // Check if user has email enabled
+      if (!emailEnabledMap[userId]) {
+        console.log(`[REMINDER] Email disabled for user ${userId}`);
+        return;
+      }
+
       const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(userId);
       if (userError || !user?.email) return;
 
@@ -99,7 +110,31 @@ serve(async (req) => {
         } catch {}
       }
 
-      console.log(`[REMINDER] To: ${user.email}\n${emailBody}`);
+      // Send actual email via Lovable transactional email API
+      try {
+        const emailResp = await fetch("https://api.lovable.app/v1/email/send", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            to: user.email,
+            subject: `Reminder: ${reminders.length > 1 ? `${reminders.length} upcoming reminders` : reminders[0].title}`,
+            html: emailBody.replace(/\n/g, "<br>"),
+            purpose: "transactional",
+          }),
+        });
+
+        if (!emailResp.ok) {
+          const errText = await emailResp.text();
+          console.error(`[REMINDER] Email send failed for ${user.email}:`, errText);
+        } else {
+          console.log(`[REMINDER] Email sent to ${user.email}`);
+        }
+      } catch (emailErr) {
+        console.error(`[REMINDER] Email error for ${user.email}:`, emailErr);
+      }
 
       // Update recurring reminders in parallel
       await Promise.all(reminders

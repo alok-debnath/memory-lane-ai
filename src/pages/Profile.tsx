@@ -16,6 +16,9 @@ import ExportMemories from '@/components/ExportMemories';
 import PageInfoButton from '@/components/PageInfoButton';
 import { useTimezone } from '@/hooks/useTimezone';
 import { getAllTimezones, formatTimezoneLabel } from '@/lib/timezone';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const Profile: React.FC = () => {
   const { user, signOut, timezone, updateTimezone } = useAuth();
@@ -25,12 +28,55 @@ const Profile: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
 
+  const queryClient = useQueryClient();
+
   const { data: notes = [] } = useQuery({
     queryKey: ['memory-notes'],
     queryFn: async () => {
       const { data, error } = await supabase.from('memory_notes').select('*');
       if (error) throw error;
       return data as MemoryNote[];
+    },
+  });
+
+  const { data: notificationPrefs } = useQuery({
+    queryKey: ['notification-preferences'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('notification_preferences')
+        .select('*')
+        .eq('user_id', user!.id)
+        .single();
+      if (error && error.code === 'PGRST116') {
+        // Create default preferences if they don't exist
+        const { data: newPrefs, error: insertError } = await supabase
+          .from('notification_preferences')
+          .insert({ user_id: user!.id })
+          .select()
+          .single();
+        if (insertError) throw insertError;
+        return newPrefs;
+      }
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const updateNotificationPref = useMutation({
+    mutationFn: async ({ field, value }: { field: string; value: boolean }) => {
+      const { error } = await supabase
+        .from('notification_preferences')
+        .update({ [field]: value })
+        .eq('user_id', user!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notification-preferences'] });
+      toast({ title: 'Preferences updated' });
+    },
+    onError: (err: any) => {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
     },
   });
 
@@ -137,6 +183,63 @@ const Profile: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Notifications group */}
+      <div>
+        <p className="section-label">Notifications</p>
+        <div className="native-group">
+          <div className="native-group-item justify-between">
+            <div className="flex items-center gap-3">
+              <Bell className="w-[18px] h-[18px] text-muted-foreground" />
+              <div>
+                <Label htmlFor="email-notif" className="text-[15px] text-foreground font-normal cursor-pointer">
+                  Email Reminders
+                </Label>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Get reminder emails</p>
+              </div>
+            </div>
+            <Switch
+              id="email-notif"
+              checked={notificationPrefs?.email_enabled ?? true}
+              onCheckedChange={(checked) => updateNotificationPref.mutate({ field: 'email_enabled', value: checked })}
+            />
+          </div>
+
+          <div className="native-group-item justify-between">
+            <div className="flex items-center gap-3">
+              <Bell className="w-[18px] h-[18px] text-muted-foreground" />
+              <div>
+                <Label htmlFor="browser-notif" className="text-[15px] text-foreground font-normal cursor-pointer">
+                  Browser Notifications
+                </Label>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Desktop notifications</p>
+              </div>
+            </div>
+            <Switch
+              id="browser-notif"
+              checked={notificationPrefs?.browser_notifications_enabled ?? true}
+              onCheckedChange={(checked) => updateNotificationPref.mutate({ field: 'browser_notifications_enabled', value: checked })}
+            />
+          </div>
+
+          <div className="native-group-item justify-between">
+            <div className="flex items-center gap-3">
+              <Bell className="w-[18px] h-[18px] text-muted-foreground" />
+              <div>
+                <Label htmlFor="push-notif" className="text-[15px] text-foreground font-normal cursor-pointer">
+                  Push Notifications
+                </Label>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Mobile push alerts</p>
+              </div>
+            </div>
+            <Switch
+              id="push-notif"
+              checked={notificationPrefs?.push_notifications_enabled ?? true}
+              onCheckedChange={(checked) => updateNotificationPref.mutate({ field: 'push_notifications_enabled', value: checked })}
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Settings group */}
       <div>
