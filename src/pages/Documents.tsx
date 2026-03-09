@@ -80,9 +80,7 @@ const Documents: React.FC = () => {
     if (!query.trim() || !user) { setSearchResults(null); return; }
     setSearching(true);
     try {
-      const { data, error } = await supabase.functions.invoke('semantic-search', {
-        body: { query, userId: user.id, searchDocs: true },
-      });
+      const { data, error } = await invokeEdge('semantic-search', { query, userId: user.id, searchDocs: true });
       if (error) throw error;
       // Filter for document results
       const docResults = (data.documentResults || []) as DocExtraction[];
