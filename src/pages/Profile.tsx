@@ -13,6 +13,7 @@ import { type MemoryNote } from '@/components/MemoryCard';
 import { useToast } from '@/hooks/use-toast';
 import ThemeToggle from '@/components/ThemeToggle';
 import ExportMemories from '@/components/ExportMemories';
+import PageInfoButton from '@/components/PageInfoButton';
 import { format } from 'date-fns';
 
 const Profile: React.FC = () => {
