@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import BottomNav from './BottomNav';
 import DesktopSidebar from './DesktopSidebar';
 import UnifiedCommandPanel from './UnifiedCommandPanel';
+import PageInfoButton from './PageInfoButton';
 
 const CommandPanelContext = createContext<{ open: () => void }>({ open: () => {} });
 export const useCommandPanel = () => useContext(CommandPanelContext);
