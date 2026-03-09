@@ -5,14 +5,14 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
-  User, Brain, Bell, LogOut, Calendar, Shield, Download, Trash2,
-  ChevronRight, Loader2, CheckCircle, Moon, ChevronDown,
+  User, Brain, Bell, LogOut, Calendar, Shield, Trash2,
+  Loader2, Moon, ChevronDown,
 } from 'lucide-react';
 import { type MemoryNote } from '@/components/MemoryCard';
 import { useToast } from '@/hooks/use-toast';
 import ThemeToggle from '@/components/ThemeToggle';
+import ExportMemories from '@/components/ExportMemories';
 import { format } from 'date-fns';
 
 const Profile: React.FC = () => {
