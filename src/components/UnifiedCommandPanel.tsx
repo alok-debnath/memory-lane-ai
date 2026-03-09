@@ -4,6 +4,7 @@ import {
   Mic, Square, X, Send, Loader2, Bot, User,
   Keyboard, Brain, ArrowRight, Volume2, VolumeX,
   PenLine, LayoutTemplate, Plus, CheckCircle2, Lightbulb,
+  Paperclip, Image,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { invokeEdge } from '@/lib/invokeEdge';
@@ -17,9 +18,17 @@ import MemoryTemplates, { type MemoryTemplate } from '@/components/MemoryTemplat
 import CapsuleDatePicker from '@/components/CapsuleDatePicker';
 import MemoryConflicts from '@/components/MemoryConflicts';
 
+interface ChatAttachment {
+  url: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  attachments?: ChatAttachment[];
 }
 
 const VoiceWaveform: React.FC = () => (
@@ -54,6 +63,7 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
   const [liveTranscript, setLiveTranscript] = useState('');
   const [duration, setDuration] = useState(0);
   const [ttsEnabled, setTtsEnabled] = useState(() => localStorage.getItem('memora-tts') !== 'false');
+  const [pendingFiles, setPendingFiles] = useState<{ file: File; preview?: string }[]>([]);
 
   // -- Note state --
   const [noteMode, setNoteMode] = useState<'text' | 'template'>('text');
@@ -68,6 +78,7 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
   const finalTranscriptRef = useRef('');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -102,32 +113,89 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
   }, [open, stop]);
 
   // ===================== CHAT LOGIC =====================
-  const sendToAI = useCallback(async (text: string) => {
+  const sendToAI = useCallback(async (text: string, attachments?: ChatAttachment[]) => {
     if (!text.trim() || loading || !user) return;
-    const userMsg: Message = { role: 'user', content: text.trim() };
-    setMessages((prev) => {
-      const all = [...prev, userMsg];
-      (async () => {
-        setLoading(true);
-        try {
-          const { data, error } = await invokeEdge('memory-chat', {
-            messages: all.map((m) => ({ role: m.role, content: m.content })), userId: user.id,
-          });
-          if (error) throw error;
-          const reply = data.error ? `⚠️ ${data.error}` : data.reply;
-          setMessages((p) => [...p, { role: 'assistant', content: reply }]);
-          if (data.mutated) queryClient.invalidateQueries({ queryKey: ['memory-notes'] });
-          if (ttsEnabled && !data.error) speak(reply);
-        } catch (err: any) {
-          setMessages((p) => [...p, { role: 'assistant', content: `Something went wrong. ${err.message}` }]);
-        } finally {
-          setLoading(false);
-        }
-      })();
-      return all;
+
+    const userMsg: Message = { role: 'user', content: text.trim(), attachments };
+    const all = [...messages, userMsg];
+    setMessages(all);
+    setLoading(true);
+
+    try {
+      const { data, error } = await invokeEdge('memory-chat', {
+        messages: all.map((m) => ({
+          role: m.role,
+          content: m.role === 'user' && m.attachments?.length
+            ? `${m.content}\n\n${m.attachments.map((a) => `[Attached file: ${a.name} (${a.type}) — URL: ${a.url}]`).join('\n')}`
+            : m.content,
+        })),
+        userId: user.id,
+      });
+
+      if (error) throw error;
+      const reply = data.error ? `⚠️ ${data.error}` : data.reply;
+      setMessages((p) => [...p, { role: 'assistant', content: reply }]);
+      if (data.mutated) queryClient.invalidateQueries({ queryKey: ['memory-notes'] });
+      if (ttsEnabled && !data.error) speak(reply);
+    } catch (err: any) {
+      setMessages((p) => [...p, { role: 'assistant', content: `Something went wrong. ${err.message}` }]);
+    } finally {
+      setLoading(false);
+      setInput('');
+    }
+  }, [loading, user, messages, queryClient, ttsEnabled, speak]);
+
+  const uploadFile = useCallback(async (file: File): Promise<ChatAttachment | null> => {
+    if (!user) return null;
+    const path = `chat/${user.id}/${Date.now()}-${file.name}`;
+    const { error } = await supabase.storage.from('memory-attachments').upload(path, file);
+    if (error) {
+      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+      return null;
+    }
+    const { data: urlData } = supabase.storage.from('memory-attachments').getPublicUrl(path);
+    return { url: urlData.publicUrl, name: file.name, type: file.type, size: file.size };
+  }, [user, toast]);
+
+  const clearPendingFiles = useCallback(() => {
+    setPendingFiles((prev) => {
+      prev.forEach((f) => { if (f.preview) URL.revokeObjectURL(f.preview); });
+      return [];
     });
-    setInput('');
-  }, [loading, user, queryClient, ttsEnabled, speak]);
+  }, []);
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setPendingFiles((prev) => [
+      ...prev,
+      ...files.map((file) => ({
+        file,
+        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+      })),
+    ]);
+    e.target.value = '';
+  }, []);
+
+  const removePendingFile = useCallback((index: number) => {
+    setPendingFiles((prev) => {
+      const target = prev[index];
+      if (target?.preview) URL.revokeObjectURL(target.preview);
+      return prev.filter((_, i) => i !== index);
+    });
+  }, []);
+
+  const handleSend = useCallback(async (rawInput: string) => {
+    if ((!rawInput.trim() && pendingFiles.length === 0) || loading) return;
+
+    let attachments: ChatAttachment[] | undefined;
+    if (pendingFiles.length > 0) {
+      const uploaded = await Promise.all(pendingFiles.map((f) => uploadFile(f.file)));
+      attachments = uploaded.filter(Boolean) as ChatAttachment[];
+      clearPendingFiles();
+    }
+
+    await sendToAI(rawInput.trim() || 'Please process these files and save as memories.', attachments);
+  }, [pendingFiles, loading, uploadFile, clearPendingFiles, sendToAI]);
 
   const startListening = useCallback(async () => {
     stop();
@@ -267,6 +335,7 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
   const handleClose = () => {
     onOpenChange(false);
     stop();
+    clearPendingFiles();
     resetNoteState();
   };
 
@@ -294,6 +363,15 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
           </motion.button>
         )}
       </AnimatePresence>
+
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        multiple
+        accept="image/*,.pdf,.doc,.docx,.txt"
+        className="hidden"
+      />
 
       {/* Panel */}
       <AnimatePresence>
@@ -447,6 +525,16 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
                                 : 'bg-secondary/60 text-foreground rounded-bl-md'
                             }`}
                           >
+                            {msg.attachments?.length ? (
+                              <div className="flex flex-wrap gap-1.5 mb-2">
+                                {msg.attachments.map((a, j) => (
+                                  <div key={j} className="flex items-center gap-1 text-[11px] opacity-80 bg-background/20 rounded-lg px-2 py-1">
+                                    {a.type.startsWith('image/') ? <Image className="w-3 h-3" /> : <Paperclip className="w-3 h-3" />}
+                                    <span className="truncate max-w-[100px]">{a.name}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null}
                             {msg.role === 'assistant' ? (
                               <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>p:not(:last-child)]:mb-1.5 [&>ul]:my-1 [&>ol]:my-1 [&>li]:text-[13px]">
                                 <ReactMarkdown>{msg.content}</ReactMarkdown>
@@ -503,8 +591,40 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
 
                     {/* Chat Input */}
                     <div className="px-3 py-2.5 pb-safe">
+                      {pendingFiles.length > 0 && (
+                        <div className="pb-2 flex flex-wrap gap-1.5">
+                          {pendingFiles.map((f, i) => (
+                            <div key={i} className="relative group">
+                              {f.preview ? (
+                                <img src={f.preview} alt={f.file.name} className="w-12 h-12 rounded-lg object-cover border border-border/50" />
+                              ) : (
+                                <div className="w-12 h-12 rounded-lg bg-secondary/60 border border-border/50 flex items-center justify-center">
+                                  <Paperclip className="w-4 h-4 text-muted-foreground" />
+                                </div>
+                              )}
+                              <button
+                                onClick={() => removePendingFile(i)}
+                                className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       {chatMode === 'voice' ? (
-                        <div className="flex flex-col items-center gap-1.5 py-1">
+                        <div className="relative flex flex-col items-center gap-1.5 py-1 w-full">
+                          {!isListening && !loading && (
+                            <button
+                              onClick={() => fileInputRef.current?.click()}
+                              className="absolute left-0 bottom-1 h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary transition-all"
+                              title="Attach file"
+                            >
+                              <Paperclip className="w-4 h-4" />
+                            </button>
+                          )}
+
                           <AnimatePresence mode="wait">
                             {loading ? (
                               <motion.div key="proc" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className="flex flex-col items-center gap-1.5">
@@ -542,19 +662,27 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
                         </div>
                       ) : (
                         <div className="flex gap-2 items-center">
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={loading}
+                            className="h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary transition-all disabled:opacity-40"
+                            title="Attach file"
+                          >
+                            <Paperclip className="w-4 h-4" />
+                          </button>
                           <input
                             ref={inputRef}
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && sendToAI(input)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSend(input)}
                             placeholder="Type a message..."
                             disabled={loading}
                             className="flex-1 h-10 rounded-xl bg-secondary/50 border-0 px-3.5 text-[13px] text-foreground placeholder:text-muted-foreground/50
                               focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all disabled:opacity-50"
                           />
                           <button
-                            onClick={() => sendToAI(input)}
-                            disabled={!input.trim() || loading}
+                            onClick={() => handleSend(input)}
+                            disabled={(!input.trim() && pendingFiles.length === 0) || loading}
                             className="h-10 w-10 shrink-0 rounded-xl btn-gradient flex items-center justify-center disabled:opacity-40"
                           >
                             {loading ? <Loader2 className="w-4 h-4 animate-spin text-primary-foreground" /> : <Send className="w-4 h-4 text-primary-foreground" />}
