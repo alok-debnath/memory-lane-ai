@@ -80,7 +80,10 @@ const Profile: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-display font-bold text-foreground tracking-tight">Profile</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-display font-bold text-foreground tracking-tight">Profile</h1>
+        <PageInfoButton />
+      </div>
 
       {/* User card */}
       <div className="native-card-elevated p-5 flex items-center gap-4">

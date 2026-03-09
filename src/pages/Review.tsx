@@ -171,14 +171,16 @@ const Review: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           <PageInfoButton />
-          variant="outline"
-          size="sm"
-          onClick={() => setAddingMode(!addingMode)}
-          className="rounded-xl"
-        >
-          <Plus className="w-4 h-4 mr-1" />
-          Add
-        </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setAddingMode(!addingMode)}
+            className="rounded-xl"
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            Add
+          </Button>
+        </div>
       </div>
 
       {/* Add memories to review */}
