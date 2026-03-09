@@ -156,15 +156,13 @@ const Documents: React.FC = () => {
         // 4. Get public URL and trigger AI processing
         const { data: urlData } = supabase.storage.from('memory-attachments').getPublicUrl(path);
 
-        supabase.functions.invoke('process-document', {
-          body: {
-            attachmentId: attachment.id,
-            memoryId: memory.id,
-            userId: user.id,
-            fileUrl: urlData.publicUrl,
-            fileType: file.type,
-            fileName: file.name,
-          },
+        invokeEdge('process-document', {
+          attachmentId: attachment.id,
+          memoryId: memory.id,
+          userId: user.id,
+          fileUrl: urlData.publicUrl,
+          fileType: file.type,
+          fileName: file.name,
         }).then(() => {
           queryClient.invalidateQueries({ queryKey: ['document-extractions'] });
         });

@@ -35,9 +35,7 @@ const Diary: React.FC = () => {
   const processDiary = useMutation({
     mutationFn: async (text: string) => {
       setIsProcessing(true);
-      const { data, error } = await supabase.functions.invoke('process-diary', {
-        body: { text },
-      });
+      const { data, error } = await invokeEdge('process-diary', { text });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       return data;
