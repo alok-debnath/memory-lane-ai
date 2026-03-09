@@ -4,6 +4,7 @@ import {
   Mic, Square, X, Send, Loader2, Bot, User,
   Keyboard, Brain, ArrowRight, Volume2, VolumeX,
   PenLine, LayoutTemplate, Plus, CheckCircle2, Lightbulb,
+  Paperclip, Image,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { invokeEdge } from '@/lib/invokeEdge';
@@ -17,9 +18,17 @@ import MemoryTemplates, { type MemoryTemplate } from '@/components/MemoryTemplat
 import CapsuleDatePicker from '@/components/CapsuleDatePicker';
 import MemoryConflicts from '@/components/MemoryConflicts';
 
+interface ChatAttachment {
+  url: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  attachments?: ChatAttachment[];
 }
 
 const VoiceWaveform: React.FC = () => (
