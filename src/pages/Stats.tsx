@@ -27,6 +27,7 @@ const moodColors: Record<string, string> = {
 };
 
 const Stats: React.FC = () => {
+  const { formatTz } = useTimezone();
   const { data: notes = [], isLoading } = useQuery({
     queryKey: ['memory-notes'],
     queryFn: async () => {
