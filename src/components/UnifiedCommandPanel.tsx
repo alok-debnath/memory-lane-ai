@@ -6,6 +6,7 @@ import {
   PenLine, LayoutTemplate, Plus, CheckCircle2, Lightbulb,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { invokeEdge } from '@/lib/invokeEdge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import ReactMarkdown from 'react-markdown';
@@ -63,7 +64,7 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
   const [conflicts, setConflicts] = useState<any[] | null>(null);
   const [lastSavedMemory, setLastSavedMemory] = useState<{ id: string; title: string } | null>(null);
 
-  const { user, timezone } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -109,8 +110,8 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
       (async () => {
         setLoading(true);
         try {
-          const { data, error } = await supabase.functions.invoke('memory-chat', {
-            body: { messages: all.map((m) => ({ role: m.role, content: m.content })), userId: user.id },
+          const { data, error } = await invokeEdge('memory-chat', {
+            messages: all.map((m) => ({ role: m.role, content: m.content })), userId: user.id,
           });
           if (error) throw error;
           const reply = data.error ? `⚠️ ${data.error}` : data.reply;
@@ -202,9 +203,7 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
     setLastActions(null);
     setConflicts(null);
     try {
-      const { data, error } = await supabase.functions.invoke('process-memory', {
-        body: { input: inputText, isAudio: false, timezone },
-      });
+      const { data, error } = await invokeEdge('process-memory', { input: inputText, isAudio: false });
       if (error) throw error;
 
       const insertPayload: any = {
@@ -244,8 +243,8 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
         setTimeout(() => { onOpenChange(false); resetNoteState(); }, 600);
       }
 
-      supabase.functions.invoke('detect-conflicts', {
-        body: { memoryId: savedId, content: data.content, title: savedTitle, userId: user!.id },
+      invokeEdge('detect-conflicts', {
+        memoryId: savedId, content: data.content, title: savedTitle, userId: user!.id,
       }).then(({ data: conflictData }) => {
         if (conflictData?.conflicts?.length > 0) setConflicts(conflictData.conflicts);
       }).catch(() => {});

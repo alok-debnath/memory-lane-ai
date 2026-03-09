@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Save, Mic, Square, Sparkles, Pencil, X, Plus, Lightbulb, Volume2, VolumeX, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import { invokeEdge } from '@/lib/invokeEdge';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { type MemoryNote } from '@/components/MemoryCard';
@@ -177,14 +178,12 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
 
       setVoiceProcessing(true);
       try {
-        const { data, error } = await supabase.functions.invoke('memory-chat', {
-          body: {
-            messages: [{
-              role: 'user',
-              content: `Edit memory (ID: ${note.id}). Current: title="${title}", content="${content}", category="${category}". Instruction: "${voiceText}". Update it.`,
-            }],
-            userId: note.user_id,
-          },
+        const { data, error } = await invokeEdge('memory-chat', {
+          messages: [{
+            role: 'user',
+            content: `Edit memory (ID: ${note.id}). Current: title="${title}", content="${content}", category="${category}". Instruction: "${voiceText}". Update it.`,
+          }],
+          userId: note.user_id,
         });
         if (error) throw error;
         if (data.mutated) {

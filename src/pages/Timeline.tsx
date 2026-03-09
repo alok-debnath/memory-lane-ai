@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { invokeEdge } from '@/lib/invokeEdge';
 import { type MemoryNote } from '@/components/MemoryCard';
 import EditMemoryDialog from '@/components/EditMemoryDialog';
 import { Clock, Bell, Brain, ChevronRight, Search, Sparkles } from 'lucide-react';
@@ -46,9 +47,7 @@ const Timeline: React.FC = () => {
     if (!query.trim() || !user) { setSearchResults(null); return; }
     setSearching(true);
     try {
-      const { data, error } = await supabase.functions.invoke('semantic-search', {
-        body: { query, userId: user.id, mode: 'hybrid' },
-      });
+      const { data, error } = await invokeEdge('semantic-search', { query, userId: user.id, mode: 'hybrid' });
       if (error) throw error;
       setSearchResults(data.results || []);
     } catch {

@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Upload, X, FileIcon, Image, FileText, Film, Music, Loader2, Sparkles, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { invokeEdge } from '@/lib/invokeEdge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -59,15 +60,13 @@ const FileUploader: React.FC<FileUploaderProps> = ({ memoryId, existingFiles = [
 
     setProcessingIds(prev => new Set(prev).add(file.id!));
     try {
-      const { data, error } = await supabase.functions.invoke('process-document', {
-        body: {
-          attachmentId: file.id,
-          memoryId,
-          userId: user.id,
-          fileUrl,
-          fileType: file.file_type,
-          fileName: file.file_name,
-        },
+      const { data, error } = await invokeEdge('process-document', {
+        attachmentId: file.id,
+        memoryId,
+        userId: user.id,
+        fileUrl,
+        fileType: file.file_type,
+        fileName: file.file_name,
       });
 
       if (error) throw error;

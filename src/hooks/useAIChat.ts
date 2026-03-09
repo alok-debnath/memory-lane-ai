@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { invokeEdge } from '@/lib/invokeEdge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTTS } from '@/hooks/useTTS';
@@ -26,7 +27,7 @@ export function useAIChat() {
     localStorage.getItem('memora-conv-id') || crypto.randomUUID()
   );
   const [ttsEnabled, setTtsEnabled] = useState(() => localStorage.getItem('memora-tts') !== 'false');
-  const { user, timezone } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { speak, stop, speaking } = useTTS();
   const { toast } = useToast();
@@ -116,17 +117,14 @@ export function useAIChat() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('memory-chat', {
-        body: {
-          messages: newMessages.map(m => ({
-            role: m.role,
-            content: m.role === 'user' && m.attachments?.length
-              ? `${m.content}\n\n${m.attachments.map(a => `[Attached file: ${a.name} (${a.type}) — URL: ${a.url}]`).join('\n')}`
-              : m.content,
-          })),
-          userId: user.id,
-          timezone,
-        },
+      const { data, error } = await invokeEdge('memory-chat', {
+        messages: newMessages.map(m => ({
+          role: m.role,
+          content: m.role === 'user' && m.attachments?.length
+            ? `${m.content}\n\n${m.attachments.map(a => `[Attached file: ${a.name} (${a.type}) — URL: ${a.url}]`).join('\n')}`
+            : m.content,
+        })),
+        userId: user.id,
       });
 
       if (error) throw error;

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { invokeEdge } from '@/lib/invokeEdge';
 import MemoryCard, { type MemoryNote } from '@/components/MemoryCard';
 import EditMemoryDialog from '@/components/EditMemoryDialog';
 import DailyFlashback from '@/components/DailyFlashback';
@@ -114,9 +115,7 @@ const Dashboard: React.FC = () => {
     if (!query.trim() || !user) { setSemanticResults(null); return; }
     setSearching(true);
     try {
-      const { data, error } = await supabase.functions.invoke('semantic-search', {
-        body: { query, userId: user.id, mode: 'hybrid' },
-      });
+      const { data, error } = await invokeEdge('semantic-search', { query, userId: user.id, mode: 'hybrid' });
       if (error) throw error;
       setSemanticResults(data.results || []);
     } catch {

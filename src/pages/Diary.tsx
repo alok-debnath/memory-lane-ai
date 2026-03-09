@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { invokeEdge } from '@/lib/invokeEdge';
 import { useToast } from '@/hooks/use-toast';
 import VoiceRecorder from '@/components/VoiceRecorder';
 import DiaryEntryCard from '@/components/diary/DiaryEntryCard';
@@ -34,9 +35,7 @@ const Diary: React.FC = () => {
   const processDiary = useMutation({
     mutationFn: async (text: string) => {
       setIsProcessing(true);
-      const { data, error } = await supabase.functions.invoke('process-diary', {
-        body: { text },
-      });
+      const { data, error } = await invokeEdge('process-diary', { text });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       return data;

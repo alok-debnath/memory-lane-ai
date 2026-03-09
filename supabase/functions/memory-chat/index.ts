@@ -457,8 +457,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, userId, timezone } = await req.json();
-    const userTz = timezone || 'UTC';
+    const { messages, userId } = await req.json();
+    const userTz = req.headers.get('x-user-timezone') || 'UTC';
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 

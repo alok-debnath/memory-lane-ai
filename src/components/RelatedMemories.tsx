@@ -1,6 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { invokeEdge } from '@/lib/invokeEdge';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link2, Sparkles } from 'lucide-react';
 import { type MemoryNote } from '@/components/MemoryCard';
@@ -16,8 +17,8 @@ const RelatedMemories: React.FC<RelatedMemoriesProps> = ({ note, onSelect }) => 
   const { data: related = [], isLoading } = useQuery({
     queryKey: ['related-memories', note.id],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('semantic-search', {
-        body: { query: `${note.title} ${note.content.slice(0, 200)}`, userId: user?.id },
+      const { data, error } = await invokeEdge('semantic-search', {
+        query: `${note.title} ${note.content.slice(0, 200)}`, userId: user?.id,
       });
       if (error) throw error;
       // Filter out the current note

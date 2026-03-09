@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { invokeEdge } from '@/lib/invokeEdge';
 import { useAuth } from '@/contexts/AuthContext';
 import { FileText, Search, ShieldCheck, Clock, AlertTriangle, FileIcon, Image, Receipt, ScrollText, Award, Sparkles, Upload, Loader2, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -79,9 +80,7 @@ const Documents: React.FC = () => {
     if (!query.trim() || !user) { setSearchResults(null); return; }
     setSearching(true);
     try {
-      const { data, error } = await supabase.functions.invoke('semantic-search', {
-        body: { query, userId: user.id, searchDocs: true },
-      });
+      const { data, error } = await invokeEdge('semantic-search', { query, userId: user.id, searchDocs: true });
       if (error) throw error;
       // Filter for document results
       const docResults = (data.documentResults || []) as DocExtraction[];
@@ -157,15 +156,13 @@ const Documents: React.FC = () => {
         // 4. Get public URL and trigger AI processing
         const { data: urlData } = supabase.storage.from('memory-attachments').getPublicUrl(path);
 
-        supabase.functions.invoke('process-document', {
-          body: {
-            attachmentId: attachment.id,
-            memoryId: memory.id,
-            userId: user.id,
-            fileUrl: urlData.publicUrl,
-            fileType: file.type,
-            fileName: file.name,
-          },
+        invokeEdge('process-document', {
+          attachmentId: attachment.id,
+          memoryId: memory.id,
+          userId: user.id,
+          fileUrl: urlData.publicUrl,
+          fileType: file.type,
+          fileName: file.name,
         }).then(() => {
           queryClient.invalidateQueries({ queryKey: ['document-extractions'] });
         });

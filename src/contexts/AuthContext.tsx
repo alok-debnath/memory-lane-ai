@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { getDetectedTimezone } from '@/lib/timezone';
+import { setEdgeTimezone } from '@/lib/invokeEdge';
 
 interface AuthContextType {
   session: Session | null;
@@ -51,15 +52,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .single();
 
         if (error && error.code === 'PGRST116') {
-          // No profile exists — create one with auto-detected timezone
           const detected = getDetectedTimezone();
           await (supabase as any).from('profiles').insert({
             id: user.id,
             timezone: detected,
           });
           setTimezone(detected);
+          setEdgeTimezone(detected);
         } else if (profile) {
-          setTimezone(profile.timezone || getDetectedTimezone());
+          const tz = profile.timezone || getDetectedTimezone();
+          setTimezone(tz);
+          setEdgeTimezone(tz);
         }
       } catch {
         setTimezone(getDetectedTimezone());
@@ -94,6 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateTimezone = async (tz: string) => {
     if (!user) return;
     setTimezone(tz);
+    setEdgeTimezone(tz);
     try {
       await (supabase as any).from('profiles').update({ timezone: tz }).eq('id', user.id);
     } catch {

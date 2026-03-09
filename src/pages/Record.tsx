@@ -5,6 +5,7 @@ import TextNoteInput from '@/components/TextNoteInput';
 import MemoryTemplates, { type MemoryTemplate } from '@/components/MemoryTemplates';
 import CapsuleDatePicker from '@/components/CapsuleDatePicker';
 import { supabase } from '@/integrations/supabase/client';
+import { invokeEdge } from '@/lib/invokeEdge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -20,7 +21,7 @@ const Record: React.FC = () => {
   const [lastActions, setLastActions] = useState<any[] | null>(null);
   const [conflicts, setConflicts] = useState<any[] | null>(null);
   const [lastSavedMemory, setLastSavedMemory] = useState<{ id: string; title: string } | null>(null);
-  const { user, timezone } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -30,9 +31,7 @@ const Record: React.FC = () => {
     setLastActions(null);
     setConflicts(null);
     try {
-      const { data, error } = await supabase.functions.invoke('process-memory', {
-        body: { input, isAudio, timezone },
-      });
+      const { data, error } = await invokeEdge('process-memory', { input, isAudio });
 
       if (error) throw error;
 
@@ -85,8 +84,8 @@ const Record: React.FC = () => {
       }
 
       // Run conflict detection in background (non-blocking)
-      supabase.functions.invoke('detect-conflicts', {
-        body: { memoryId: savedId, content: data.content, title: savedTitle, userId: user!.id },
+      invokeEdge('detect-conflicts', {
+        memoryId: savedId, content: data.content, title: savedTitle, userId: user!.id,
       }).then(({ data: conflictData }) => {
         if (conflictData?.conflicts?.length > 0) {
           setConflicts(conflictData.conflicts);
