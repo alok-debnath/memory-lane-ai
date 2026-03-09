@@ -364,6 +364,15 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
         )}
       </AnimatePresence>
 
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        multiple
+        accept="image/*,.pdf,.doc,.docx,.txt"
+        className="hidden"
+      />
+
       {/* Panel */}
       <AnimatePresence>
         {open && (
