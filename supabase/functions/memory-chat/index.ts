@@ -181,6 +181,24 @@ const TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "attach_file_to_memory",
+      description: "Attach a file (image, document, etc.) that the user uploaded in chat to a memory. Use after creating a memory when the user shared files they want attached.",
+      parameters: {
+        type: "object",
+        properties: {
+          memory_id: { type: "string", description: "UUID of the memory to attach the file to" },
+          file_url: { type: "string", description: "The full URL of the uploaded file" },
+          file_name: { type: "string", description: "Original file name" },
+          file_type: { type: "string", description: "MIME type of the file" },
+        },
+        required: ["memory_id", "file_url", "file_name", "file_type"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 async function generateEmbedding(text: string, apiKey: string): Promise<number[] | null> {
@@ -406,6 +424,30 @@ async function executeTool(
       return JSON.stringify({ success: true, action: exists ? "reverted" : "restored", title: snap.title });
     }
 
+    case "attach_file_to_memory": {
+      try {
+        const url = new URL(args.file_url);
+        const pathParts = url.pathname.split('/memory-attachments/');
+        const filePath = pathParts.length > 1 ? decodeURIComponent(pathParts[1]) : args.file_url;
+        const { data, error } = await supabase
+          .from("memory_attachments")
+          .insert({
+            memory_id: args.memory_id,
+            user_id: userId,
+            file_name: args.file_name,
+            file_type: args.file_type,
+            file_path: filePath,
+            file_size: 0,
+          })
+          .select("id")
+          .single();
+        if (error) return JSON.stringify({ error: error.message });
+        return JSON.stringify({ success: true, attachment_id: data.id });
+      } catch (e: any) {
+        return JSON.stringify({ error: e.message || "Failed to attach file" });
+      }
+    }
+
     default:
       return JSON.stringify({ error: "Unknown tool" });
   }
@@ -455,7 +497,12 @@ serve(async (req) => {
 
 Today's date: ${new Date().toISOString().split('T')[0]}
 Format dates in a human-friendly way (e.g., "March 15, 2026" not ISO strings).
-Use markdown only when it genuinely helps readability (lists, bold for key info). Don't over-format simple answers.`;
+Use markdown only when it genuinely helps readability (lists, bold for key info). Don't over-format simple answers.
+
+9. **FILE ATTACHMENTS**: When the user shares files in chat, the file URLs appear in their message as [Attached file: name (type) — URL: ...]. You can:
+   - Create a memory and use attach_file_to_memory to link the file to it
+   - Reference the file in your response
+   - Always confirm what you've done with the file`;
 
     const conversationMessages: any[] = [
       { role: "system", content: systemPrompt },
