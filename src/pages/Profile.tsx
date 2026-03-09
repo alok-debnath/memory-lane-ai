@@ -21,7 +21,7 @@ const Profile: React.FC = () => {
   const [changingPassword, setChangingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const [exporting, setExporting] = useState(false);
+  
 
   const { data: notes = [] } = useQuery({
     queryKey: ['memory-notes'],
