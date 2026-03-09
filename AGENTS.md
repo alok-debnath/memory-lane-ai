@@ -69,3 +69,13 @@ When working in any of the directories below, **always reference the correspondi
 - Run existing tests if available (`vitest`).
 - When adding database changes, use the migration tool — never raw SQL files.
 - Invalidate relevant React Query caches after mutations.
+
+## Keeping Documentation Up to Date
+
+> **This is mandatory.** Whenever you make structural changes — such as adding/removing/renaming directories, introducing new architectural patterns, changing the tech stack, or altering conventions — you **must** update:
+>
+> 1. **This file (`AGENTS.md`)** — update the directory table, global rules, or any affected section.
+> 2. **The relevant `INSTRUCTIONS.md`** in the affected folder(s) — add/remove/revise rules to reflect the new structure.
+> 3. **Create a new `INSTRUCTIONS.md`** if a new major directory is introduced.
+>
+> Documentation that drifts from the actual codebase is worse than no documentation. Treat these files as living artifacts, not write-once references.
