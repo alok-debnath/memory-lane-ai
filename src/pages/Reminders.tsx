@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { type MemoryNote } from '@/components/MemoryCard';
 import { Bell, Calendar, Repeat, CheckCircle } from 'lucide-react';
 import { format, isPast, isToday, isTomorrow, isThisWeek, isAfter } from 'date-fns';
+import PageInfoButton from '@/components/PageInfoButton';
 
 const Reminders: React.FC = () => {
   const { data: notes = [], isLoading } = useQuery({
