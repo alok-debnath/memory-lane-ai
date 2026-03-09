@@ -27,7 +27,7 @@ export function useAIChat() {
     localStorage.getItem('memora-conv-id') || crypto.randomUUID()
   );
   const [ttsEnabled, setTtsEnabled] = useState(() => localStorage.getItem('memora-tts') !== 'false');
-  const { user, timezone } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { speak, stop, speaking } = useTTS();
   const { toast } = useToast();
