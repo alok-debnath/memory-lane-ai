@@ -16,6 +16,9 @@ import ExportMemories from '@/components/ExportMemories';
 import PageInfoButton from '@/components/PageInfoButton';
 import { useTimezone } from '@/hooks/useTimezone';
 import { getAllTimezones, formatTimezoneLabel } from '@/lib/timezone';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const Profile: React.FC = () => {
   const { user, signOut, timezone, updateTimezone } = useAuth();
