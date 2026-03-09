@@ -497,7 +497,12 @@ serve(async (req) => {
 
 Today's date: ${new Date().toISOString().split('T')[0]}
 Format dates in a human-friendly way (e.g., "March 15, 2026" not ISO strings).
-Use markdown only when it genuinely helps readability (lists, bold for key info). Don't over-format simple answers.`;
+Use markdown only when it genuinely helps readability (lists, bold for key info). Don't over-format simple answers.
+
+9. **FILE ATTACHMENTS**: When the user shares files in chat, the file URLs appear in their message as [Attached file: name (type) — URL: ...]. You can:
+   - Create a memory and use attach_file_to_memory to link the file to it
+   - Reference the file in your response
+   - Always confirm what you've done with the file`;
 
     const conversationMessages: any[] = [
       { role: "system", content: systemPrompt },
