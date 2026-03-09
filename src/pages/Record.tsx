@@ -84,8 +84,8 @@ const Record: React.FC = () => {
       }
 
       // Run conflict detection in background (non-blocking)
-      supabase.functions.invoke('detect-conflicts', {
-        body: { memoryId: savedId, content: data.content, title: savedTitle, userId: user!.id },
+      invokeEdge('detect-conflicts', {
+        memoryId: savedId, content: data.content, title: savedTitle, userId: user!.id,
       }).then(({ data: conflictData }) => {
         if (conflictData?.conflicts?.length > 0) {
           setConflicts(conflictData.conflicts);

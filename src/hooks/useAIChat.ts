@@ -117,17 +117,14 @@ export function useAIChat() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('memory-chat', {
-        body: {
-          messages: newMessages.map(m => ({
-            role: m.role,
-            content: m.role === 'user' && m.attachments?.length
-              ? `${m.content}\n\n${m.attachments.map(a => `[Attached file: ${a.name} (${a.type}) — URL: ${a.url}]`).join('\n')}`
-              : m.content,
-          })),
-          userId: user.id,
-          timezone,
-        },
+      const { data, error } = await invokeEdge('memory-chat', {
+        messages: newMessages.map(m => ({
+          role: m.role,
+          content: m.role === 'user' && m.attachments?.length
+            ? `${m.content}\n\n${m.attachments.map(a => `[Attached file: ${a.name} (${a.type}) — URL: ${a.url}]`).join('\n')}`
+            : m.content,
+        })),
+        userId: user.id,
       });
 
       if (error) throw error;

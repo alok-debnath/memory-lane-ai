@@ -203,9 +203,7 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
     setLastActions(null);
     setConflicts(null);
     try {
-      const { data, error } = await supabase.functions.invoke('process-memory', {
-        body: { input: inputText, isAudio: false, timezone },
-      });
+      const { data, error } = await invokeEdge('process-memory', { input: inputText, isAudio: false });
       if (error) throw error;
 
       const insertPayload: any = {
