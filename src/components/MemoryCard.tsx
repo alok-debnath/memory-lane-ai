@@ -141,26 +141,28 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete, onEdit }
         )}
       </div>
 
-      {/* Actions */}
+      {/* Actions - hidden on mobile, shown on hover for desktop */}
       <div className="flex items-center gap-0.5 shrink-0">
-        {!isLocked && (
-          <>
-            <button
-              onClick={handleTTS}
-              className="h-8 w-8 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-all"
-              title={speaking ? 'Stop reading' : 'Read aloud'}
-            >
-              {speaking ? <VolumeX className="w-4 h-4 text-primary" /> : <Volume2 className="w-4 h-4" />}
-            </button>
-            <ShareMemory memoryId={note.id} title={note.title} />
-          </>
-        )}
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(note.id); }}
-          className="h-8 w-8 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        <div className="hidden md:flex items-center gap-0.5">
+          {!isLocked && (
+            <>
+              <button
+                onClick={handleTTS}
+                className="h-8 w-8 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-all"
+                title={speaking ? 'Stop reading' : 'Read aloud'}
+              >
+                {speaking ? <VolumeX className="w-4 h-4 text-primary" /> : <Volume2 className="w-4 h-4" />}
+              </button>
+              <ShareMemory memoryId={note.id} title={note.title} />
+            </>
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(note.id); }}
+            className="h-8 w-8 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
         <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
       </div>
     </motion.div>
