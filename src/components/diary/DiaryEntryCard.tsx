@@ -90,10 +90,20 @@ const DiaryEntryCard: React.FC<DiaryEntryCardProps> = ({ entry, index, moodEmoji
           className="border-t border-border/60"
         >
           <div className="p-4 space-y-4">
-            {/* Raw text */}
+            {/* Corrected text */}
             <div>
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">What you said</p>
-              <p className="text-[13px] text-foreground/80 leading-relaxed">{entry.raw_text}</p>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">📝 Entry</p>
+              <p className="text-[13px] text-foreground/80 leading-relaxed">
+                {entry.corrected_text || entry.raw_text}
+              </p>
+              {entry.corrected_text && entry.corrected_text !== entry.raw_text && (
+                <details className="mt-2">
+                  <summary className="text-[10px] text-muted-foreground/60 cursor-pointer hover:text-muted-foreground transition-colors">
+                    View original text
+                  </summary>
+                  <p className="text-[12px] text-muted-foreground/60 mt-1 leading-relaxed italic">{entry.raw_text}</p>
+                </details>
+              )}
             </div>
 
             {/* Key points */}
