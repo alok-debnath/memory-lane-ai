@@ -25,11 +25,12 @@ function downloadFile(content: string, filename: string, type: string) {
 }
 
 function toMarkdown(notes: MemoryNote[]): string {
-  const lines = [`# Memora Export`, `> Exported ${format(new Date(), 'PPP')} — ${notes.length} memories\n`];
+  const tz = getDetectedTimezone();
+  const lines = [`# Memora Export`, `> Exported ${formatInTz(new Date(), tz, 'PPP')} — ${notes.length} memories\n`];
   notes.forEach((n) => {
     lines.push(`## ${n.title}`);
-    lines.push(`**Category:** ${n.category || 'other'} | **Created:** ${format(new Date(n.created_at), 'PPP p')}`);
-    if (n.reminder_date) lines.push(`**Reminder:** ${format(new Date(n.reminder_date), 'PPP p')}`);
+    lines.push(`**Category:** ${n.category || 'other'} | **Created:** ${formatInTz(n.created_at, tz, 'PPP p')}`);
+    if (n.reminder_date) lines.push(`**Reminder:** ${formatInTz(n.reminder_date, tz, 'PPP p')}`);
     lines.push('', n.content, '', '---', '');
   });
   return lines.join('\n');
