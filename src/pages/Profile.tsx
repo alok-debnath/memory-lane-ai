@@ -151,6 +151,26 @@ const Profile: React.FC = () => {
             <ThemeToggle />
           </div>
 
+          {/* Timezone */}
+          <div className="native-group-item justify-between">
+            <div className="flex items-center gap-3">
+              <Globe className="w-[18px] h-[18px] text-muted-foreground" />
+              <span className="text-[15px] text-foreground">Timezone</span>
+            </div>
+            <select
+              value={timezone}
+              onChange={(e) => {
+                updateTimezone(e.target.value);
+                toast({ title: 'Timezone updated', description: e.target.value.replace(/_/g, ' ') });
+              }}
+              className="text-[13px] text-muted-foreground bg-secondary/60 rounded-lg px-2 py-1.5 border-0 outline-none max-w-[180px] truncate"
+            >
+              {getAllTimezones().map(tz => (
+                <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Change Password */}
           <div>
             <button

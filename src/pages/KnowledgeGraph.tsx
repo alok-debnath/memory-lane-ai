@@ -130,6 +130,7 @@ function buildForceGraph(memories: GraphMemory[]): { nodes: GraphNode[]; edges: 
 
 const KnowledgeGraph: React.FC = () => {
   const { user } = useAuth();
+  const { formatTz } = useTimezone();
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);

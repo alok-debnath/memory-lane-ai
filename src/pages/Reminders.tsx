@@ -4,10 +4,17 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { type MemoryNote } from '@/components/MemoryCard';
 import { Bell, Calendar, Repeat, CheckCircle } from 'lucide-react';
-import { format, isPast, isToday, isTomorrow, isThisWeek, isAfter } from 'date-fns';
 import PageInfoButton from '@/components/PageInfoButton';
+import { useTimezone } from '@/hooks/useTimezone';
+import {
+  isTodayInTz, isTomorrowInTz, isThisWeekInTz, isPastInTz, isAfterNowInTz,
+} from '@/lib/timezone';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Reminders: React.FC = () => {
+  const { timezone } = useAuth();
+  const { formatTz } = useTimezone();
+
   const { data: notes = [], isLoading } = useQuery({
     queryKey: ['memory-reminders'],
     queryFn: async () => {
@@ -22,23 +29,25 @@ const Reminders: React.FC = () => {
     staleTime: 30_000,
   });
 
-  const today = notes.filter((n) => n.reminder_date && isToday(new Date(n.reminder_date)));
-  const tomorrow = notes.filter((n) => n.reminder_date && isTomorrow(new Date(n.reminder_date)));
+  const today = notes.filter((n) => n.reminder_date && isTodayInTz(n.reminder_date, timezone));
+  const tomorrow = notes.filter((n) => n.reminder_date && isTomorrowInTz(n.reminder_date, timezone));
   const thisWeek = notes.filter(
     (n) =>
       n.reminder_date &&
-      isThisWeek(new Date(n.reminder_date)) &&
-      !isToday(new Date(n.reminder_date)) &&
-      !isTomorrow(new Date(n.reminder_date)) &&
-      isAfter(new Date(n.reminder_date), new Date())
+      isThisWeekInTz(n.reminder_date, timezone) &&
+      !isTodayInTz(n.reminder_date, timezone) &&
+      !isTomorrowInTz(n.reminder_date, timezone) &&
+      isAfterNowInTz(n.reminder_date, timezone)
   );
   const later = notes.filter(
     (n) =>
       n.reminder_date &&
-      !isThisWeek(new Date(n.reminder_date)) &&
-      isAfter(new Date(n.reminder_date), new Date())
+      !isThisWeekInTz(n.reminder_date, timezone) &&
+      isAfterNowInTz(n.reminder_date, timezone)
   );
-  const past = notes.filter((n) => n.reminder_date && isPast(new Date(n.reminder_date)) && !isToday(new Date(n.reminder_date)));
+  const past = notes.filter(
+    (n) => n.reminder_date && isPastInTz(n.reminder_date, timezone) && !isTodayInTz(n.reminder_date, timezone)
+  );
 
   const sections = [
     { title: 'Today', items: today, accent: true },
@@ -112,7 +121,7 @@ const Reminders: React.FC = () => {
                         {note.title}
                       </p>
                       <p className="text-[12px] text-muted-foreground mt-0.5">
-                        {format(new Date(note.reminder_date!), 'EEE, MMM d · h:mm a')}
+                        {formatTz(note.reminder_date!, 'EEE, MMM d · h:mm a')}
                       </p>
                     </div>
                     {note.is_recurring && (
