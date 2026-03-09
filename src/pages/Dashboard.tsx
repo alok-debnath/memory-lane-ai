@@ -314,7 +314,7 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
-      <EditMemoryDialog note={editNote} open={editOpen} onOpenChange={setEditOpen} />
+      <EditMemoryDialog note={editNote} open={editOpen} onOpenChange={setEditOpen} onDelete={(id) => deleteMutation.mutate(id)} />
     </div>
   );
 };

@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Save, Mic, Square, Sparkles, Pencil, X, Plus, Lightbulb } from 'lucide-react';
+import { Loader2, Save, Mic, Square, Sparkles, Pencil, X, Plus, Lightbulb, Volume2, VolumeX, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -21,11 +21,14 @@ import FileUploader from '@/components/FileUploader';
 import RelatedMemories from '@/components/RelatedMemories';
 import ExtractedActions from '@/components/ExtractedActions';
 import CapsuleDatePicker from '@/components/CapsuleDatePicker';
+import ShareMemory from '@/components/ShareMemory';
+import { useTTS } from '@/hooks/useTTS';
 
 interface EditMemoryDialogProps {
   note: MemoryNote | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onDelete?: (id: string) => void;
 }
 
 const categories = ['personal', 'work', 'finance', 'health', 'other'];
@@ -39,9 +42,10 @@ const moodEmoji: Record<string, string> = {
   grateful: '🙏', frustrated: '😤', hopeful: '🌟', nostalgic: '💭', motivated: '💪',
 };
 
-const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenChange }) => {
+const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenChange, onDelete }) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { speak, stop, speaking } = useTTS();
   const [mode, setMode] = useState<'manual' | 'voice'>('manual');
   const [saving, setSaving] = useState(false);
   const [voiceEditing, setVoiceEditing] = useState(false);
@@ -417,6 +421,33 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
                     {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Save className="w-4 h-4 mr-1.5" />}
                     Save Changes
                   </Button>
+
+                  {/* Quick Actions */}
+                  <div className="flex items-center justify-center gap-2 pt-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => speaking ? stop() : speak(`${title}. ${content}`)}
+                      className="h-9 px-3 rounded-xl text-[13px] gap-1.5"
+                    >
+                      {speaking ? <VolumeX className="w-4 h-4 text-primary" /> : <Volume2 className="w-4 h-4" />}
+                      {speaking ? 'Stop' : 'Read Aloud'}
+                    </Button>
+                    <ShareMemory memoryId={note.id} title={note.title} />
+                    {onDelete && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => { onDelete(note.id); onOpenChange(false); }}
+                        className="h-9 px-3 rounded-xl text-[13px] gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </Button>
+                    )}
+                  </div>
 
                   <RelatedMemories
                     note={note}
