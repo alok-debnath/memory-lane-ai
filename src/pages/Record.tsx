@@ -20,7 +20,7 @@ const Record: React.FC = () => {
   const [lastActions, setLastActions] = useState<any[] | null>(null);
   const [conflicts, setConflicts] = useState<any[] | null>(null);
   const [lastSavedMemory, setLastSavedMemory] = useState<{ id: string; title: string } | null>(null);
-  const { user } = useAuth();
+  const { user, timezone } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -31,7 +31,7 @@ const Record: React.FC = () => {
     setConflicts(null);
     try {
       const { data, error } = await supabase.functions.invoke('process-memory', {
-        body: { input, isAudio },
+        body: { input, isAudio, timezone },
       });
 
       if (error) throw error;

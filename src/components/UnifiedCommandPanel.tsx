@@ -63,7 +63,7 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
   const [conflicts, setConflicts] = useState<any[] | null>(null);
   const [lastSavedMemory, setLastSavedMemory] = useState<{ id: string; title: string } | null>(null);
 
-  const { user } = useAuth();
+  const { user, timezone } = useAuth();
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -203,7 +203,7 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
     setConflicts(null);
     try {
       const { data, error } = await supabase.functions.invoke('process-memory', {
-        body: { input: inputText, isAudio: false },
+        body: { input: inputText, isAudio: false, timezone },
       });
       if (error) throw error;
 
