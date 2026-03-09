@@ -424,6 +424,30 @@ async function executeTool(
       return JSON.stringify({ success: true, action: exists ? "reverted" : "restored", title: snap.title });
     }
 
+    case "attach_file_to_memory": {
+      try {
+        const url = new URL(args.file_url);
+        const pathParts = url.pathname.split('/memory-attachments/');
+        const filePath = pathParts.length > 1 ? decodeURIComponent(pathParts[1]) : args.file_url;
+        const { data, error } = await supabase
+          .from("memory_attachments")
+          .insert({
+            memory_id: args.memory_id,
+            user_id: userId,
+            file_name: args.file_name,
+            file_type: args.file_type,
+            file_path: filePath,
+            file_size: 0,
+          })
+          .select("id")
+          .single();
+        if (error) return JSON.stringify({ error: error.message });
+        return JSON.stringify({ success: true, attachment_id: data.id });
+      } catch (e: any) {
+        return JSON.stringify({ error: e.message || "Failed to attach file" });
+      }
+    }
+
     default:
       return JSON.stringify({ error: "Unknown tool" });
   }
