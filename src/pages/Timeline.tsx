@@ -21,6 +21,7 @@ const categoryEmoji: Record<string, string> = {
 
 const Timeline: React.FC = () => {
   const { user } = useAuth();
+  const { formatTz } = useTimezone();
   const [editNote, setEditNote] = useState<MemoryNote | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [filter, setFilter] = useState<string | null>(null);
