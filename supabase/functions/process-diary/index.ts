@@ -42,7 +42,7 @@ serve(async (req) => {
           {
             role: "system",
             content: `You are a personal diary AI analyst. Analyze the user's diary entry and extract structured insights.
-You must call the extract_diary_insights function with your analysis.`
+You must call the extract_diary_insights function with your analysis. IMPORTANT: Always provide a corrected_text field with the user's text rewritten with proper grammar, punctuation, spelling, and sentence structure while preserving their original meaning and voice.`
           },
           { role: "user", content: text },
         ],
@@ -55,6 +55,7 @@ You must call the extract_diary_insights function with your analysis.`
               parameters: {
                 type: "object",
                 properties: {
+                  corrected_text: { type: "string", description: "The user's original text rewritten with correct grammar, punctuation, spelling, and sentence structure. Preserve the original meaning and voice." },
                   summary: { type: "string", description: "2-3 sentence summary of the entry" },
                   key_points: {
                     type: "array",
@@ -78,7 +79,7 @@ You must call the extract_diary_insights function with your analysis.`
                   dislikes: { type: "array", items: { type: "string" }, description: "Things the user expressed disliking" },
                   action_items: { type: "array", items: { type: "string" }, description: "Any action items or tasks mentioned" }
                 },
-                required: ["summary", "key_points", "mood", "energy_level", "topics"],
+                required: ["corrected_text", "summary", "key_points", "mood", "energy_level", "topics"],
                 additionalProperties: false,
               },
             },
@@ -107,6 +108,7 @@ You must call the extract_diary_insights function with your analysis.`
       .insert({
         user_id: user.id,
         raw_text: text,
+        corrected_text: insights.corrected_text || text,
         structured_insights: insights,
         mood: insights.mood,
         energy_level: insights.energy_level,
