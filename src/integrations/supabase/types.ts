@@ -218,14 +218,21 @@ export type Database = {
           capsule_unlock_date: string | null
           category: string | null
           content: string
+          context_tags: Json | null
           created_at: string
           embedding: string | null
           extracted_actions: Json | null
           id: string
+          importance: string | null
           is_recurring: boolean
+          life_area: string | null
+          linked_urls: string[] | null
+          locations: string[] | null
           mood: string | null
+          people: string[] | null
           recurrence_type: string | null
           reminder_date: string | null
+          sentiment_score: number | null
           tags: string[] | null
           title: string
           updated_at: string
@@ -235,14 +242,21 @@ export type Database = {
           capsule_unlock_date?: string | null
           category?: string | null
           content: string
+          context_tags?: Json | null
           created_at?: string
           embedding?: string | null
           extracted_actions?: Json | null
           id?: string
+          importance?: string | null
           is_recurring?: boolean
+          life_area?: string | null
+          linked_urls?: string[] | null
+          locations?: string[] | null
           mood?: string | null
+          people?: string[] | null
           recurrence_type?: string | null
           reminder_date?: string | null
+          sentiment_score?: number | null
           tags?: string[] | null
           title: string
           updated_at?: string
@@ -252,14 +266,21 @@ export type Database = {
           capsule_unlock_date?: string | null
           category?: string | null
           content?: string
+          context_tags?: Json | null
           created_at?: string
           embedding?: string | null
           extracted_actions?: Json | null
           id?: string
+          importance?: string | null
           is_recurring?: boolean
+          life_area?: string | null
+          linked_urls?: string[] | null
+          locations?: string[] | null
           mood?: string | null
+          people?: string[] | null
           recurrence_type?: string | null
           reminder_date?: string | null
+          sentiment_score?: number | null
           tags?: string[] | null
           title?: string
           updated_at?: string
@@ -393,13 +414,21 @@ export type Database = {
           capsule_unlock_date: string
           category: string
           content: string
+          context_tags: Json
           created_at: string
           extracted_actions: Json
           id: string
+          importance: string
           is_recurring: boolean
+          life_area: string
+          linked_urls: string[]
+          locations: string[]
           mood: string
+          people: string[]
           recurrence_type: string
           reminder_date: string
+          sentiment_score: number
+          tags: string[]
           title: string
           updated_at: string
           user_id: string

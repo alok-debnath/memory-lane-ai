@@ -412,6 +412,68 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
                     <ExtractedActions actions={note.extracted_actions} />
                   )}
 
+                  {/* AI Insights — auto-extracted, read-only */}
+                  {((note as any).people?.length > 0 || (note as any).locations?.length > 0 || (note as any).life_area || (note as any).context_tags?.what || (note as any).importance !== 'normal') && (
+                    <div className="space-y-2 bg-secondary/20 rounded-xl p-3">
+                      <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-primary" />
+                        AI Insights
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 text-[12px]">
+                        {(note as any).people?.length > 0 && (
+                          <div>
+                            <span className="text-muted-foreground">👤 People</span>
+                            <p className="text-foreground font-medium">{(note as any).people.join(', ')}</p>
+                          </div>
+                        )}
+                        {(note as any).locations?.length > 0 && (
+                          <div>
+                            <span className="text-muted-foreground">📍 Places</span>
+                            <p className="text-foreground font-medium">{(note as any).locations.join(', ')}</p>
+                          </div>
+                        )}
+                        {(note as any).life_area && (
+                          <div>
+                            <span className="text-muted-foreground">🏷️ Life Area</span>
+                            <p className="text-foreground font-medium capitalize">{(note as any).life_area}</p>
+                          </div>
+                        )}
+                        {(note as any).importance && (note as any).importance !== 'normal' && (
+                          <div>
+                            <span className="text-muted-foreground">⚡ Importance</span>
+                            <p className="text-foreground font-medium capitalize">{(note as any).importance}</p>
+                          </div>
+                        )}
+                        {(note as any).sentiment_score != null && (
+                          <div>
+                            <span className="text-muted-foreground">💭 Sentiment</span>
+                            <p className="text-foreground font-medium">
+                              {(note as any).sentiment_score > 0.3 ? '😊 Positive' : (note as any).sentiment_score < -0.3 ? '😔 Negative' : '😐 Neutral'}
+                              <span className="text-muted-foreground ml-1">({((note as any).sentiment_score as number).toFixed(1)})</span>
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      {(note as any).context_tags?.what && (
+                        <div className="text-[12px] mt-1 border-t border-border/30 pt-2">
+                          <span className="text-muted-foreground">📋 Context: </span>
+                          <span className="text-foreground">{(note as any).context_tags.what}</span>
+                          {(note as any).context_tags?.why && (
+                            <span className="text-muted-foreground"> — {(note as any).context_tags.why}</span>
+                          )}
+                        </div>
+                      )}
+                      {(note as any).linked_urls?.length > 0 && (
+                        <div className="text-[12px] mt-1">
+                          <span className="text-muted-foreground">🔗 Links: </span>
+                          {(note as any).linked_urls.map((url: string, i: number) => (
+                            <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline mr-2">{new URL(url).hostname}</a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="space-y-1">
                     <Label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Attachments</Label>
                     <FileUploader memoryId={note.id} existingFiles={existingFiles} />

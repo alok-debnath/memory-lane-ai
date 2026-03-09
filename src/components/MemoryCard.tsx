@@ -20,6 +20,13 @@ export interface MemoryNote {
   capsule_unlock_date?: string | null;
   extracted_actions?: any[] | null;
   tags?: string[] | null;
+  people?: string[] | null;
+  locations?: string[] | null;
+  importance?: string | null;
+  life_area?: string | null;
+  context_tags?: { who?: string[]; what?: string; where?: string; why?: string } | null;
+  sentiment_score?: number | null;
+  linked_urls?: string[] | null;
 }
 
 interface MemoryCardProps {
@@ -105,7 +112,26 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete, onEdit }
         ) : (
           <p className="text-[13px] text-muted-foreground leading-snug line-clamp-1 mt-0.5">{note.content}</p>
         )}
-        <div className="flex items-center gap-3 mt-1.5">
+        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+          {note.importance && note.importance !== 'normal' && (
+            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+              note.importance === 'critical' ? 'bg-destructive/15 text-destructive' :
+              note.importance === 'high' ? 'bg-primary/15 text-primary' :
+              'bg-muted text-muted-foreground'
+            }`}>
+              {note.importance === 'critical' ? '🔴' : '🟡'} {note.importance}
+            </span>
+          )}
+          {note.people && note.people.length > 0 && !isLocked && (
+            <span className="text-[11px] text-muted-foreground font-medium">
+              👤 {note.people.slice(0, 2).join(', ')}{note.people.length > 2 ? ` +${note.people.length - 2}` : ''}
+            </span>
+          )}
+          {note.locations && note.locations.length > 0 && !isLocked && (
+            <span className="text-[11px] text-muted-foreground font-medium">
+              📍 {note.locations[0]}{note.locations.length > 1 ? ` +${note.locations.length - 1}` : ''}
+            </span>
+          )}
           {note.reminder_date && (
             <span className="flex items-center gap-1 text-[11px] text-primary font-medium">
               <Bell className="w-3 h-3" />
@@ -121,6 +147,11 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete, onEdit }
             <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
               <Paperclip className="w-3 h-3" />
               {attachmentCount}
+            </span>
+          )}
+          {note.life_area && !isLocked && (
+            <span className="text-[10px] bg-accent/60 text-accent-foreground px-1.5 py-0.5 rounded-full capitalize">
+              {note.life_area}
             </span>
           )}
           <span className="text-[11px] text-muted-foreground/60">
