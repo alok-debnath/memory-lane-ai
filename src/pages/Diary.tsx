@@ -69,14 +69,17 @@ const Diary: React.FC = () => {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-display font-bold text-foreground tracking-tight flex items-center gap-2">
-          <BookOpen className="w-6 h-6 text-primary" />
-          AI Diary
-        </h1>
-        <p className="text-[13px] text-muted-foreground mt-0.5">
-          Speak or type your thoughts · AI will organize & analyze them
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-display font-bold text-foreground tracking-tight flex items-center gap-2">
+            <BookOpen className="w-6 h-6 text-primary" />
+            AI Diary
+          </h1>
+          <p className="text-[13px] text-muted-foreground mt-0.5">
+            Speak or type your thoughts · AI will organize & analyze them
+          </p>
+        </div>
+        <PageInfoButton />
       </div>
 
       {/* Input mode toggle */}
