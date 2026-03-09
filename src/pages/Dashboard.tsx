@@ -25,6 +25,7 @@ const categoryEmoji: Record<string, string> = {
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const { formatTz } = useTimezone();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
