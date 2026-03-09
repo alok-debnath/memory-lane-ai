@@ -171,6 +171,7 @@ const Dashboard: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <PageInfoButton />
           <div className="lg:hidden">
             <ThemeToggle />
           </div>
