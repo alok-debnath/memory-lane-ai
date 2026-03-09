@@ -42,9 +42,10 @@ const moodEmoji: Record<string, string> = {
   grateful: '🙏', frustrated: '😤', hopeful: '🌟', nostalgic: '💭', motivated: '💪',
 };
 
-const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenChange }) => {
+const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenChange, onDelete }) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { speak, stop, speaking } = useTTS();
   const [mode, setMode] = useState<'manual' | 'voice'>('manual');
   const [saving, setSaving] = useState(false);
   const [voiceEditing, setVoiceEditing] = useState(false);
