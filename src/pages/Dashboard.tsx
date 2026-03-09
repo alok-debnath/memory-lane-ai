@@ -194,6 +194,9 @@ const Dashboard: React.FC = () => {
       {/* AI Nudges */}
       <NudgeCards />
 
+      {/* Snapshot Summary */}
+      <DashboardSummary />
+
       {/* Daily Flashback */}
       <DailyFlashback />
 
