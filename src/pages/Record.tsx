@@ -31,9 +31,7 @@ const Record: React.FC = () => {
     setLastActions(null);
     setConflicts(null);
     try {
-      const { data, error } = await supabase.functions.invoke('process-memory', {
-        body: { input, isAudio, timezone },
-      });
+      const { data, error } = await invokeEdge('process-memory', { input, isAudio });
 
       if (error) throw error;
 
