@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Save, Mic, Square, Sparkles, Pencil, X, Plus, Lightbulb } from 'lucide-react';
+import { Loader2, Save, Mic, Square, Sparkles, Pencil, X, Plus, Lightbulb, Volume2, VolumeX, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -21,6 +21,8 @@ import FileUploader from '@/components/FileUploader';
 import RelatedMemories from '@/components/RelatedMemories';
 import ExtractedActions from '@/components/ExtractedActions';
 import CapsuleDatePicker from '@/components/CapsuleDatePicker';
+import ShareMemory from '@/components/ShareMemory';
+import { useTTS } from '@/hooks/useTTS';
 
 interface EditMemoryDialogProps {
   note: MemoryNote | null;
