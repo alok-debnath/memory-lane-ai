@@ -6,7 +6,7 @@ import { BarChart3, Flame, Brain, TrendingUp, Heart } from 'lucide-react';
 import { format, subDays, startOfDay, differenceInCalendarDays, eachDayOfInterval } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, PieChart, Pie } from 'recharts';
 import { motion } from 'framer-motion';
-import ExportMemories from '@/components/ExportMemories';
+
 
 const categoryEmoji: Record<string, string> = {
   personal: '🏠', work: '💼', finance: '💰', health: '❤️', other: '📝',
