@@ -49,6 +49,7 @@ const moodEmoji: Record<string, string> = {
 const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete, onEdit }) => {
   const [attachmentCount, setAttachmentCount] = useState(0);
   const { speak, stop, speaking } = useTTS();
+  const { formatTz } = useTimezone();
 
   const isLocked = note.capsule_unlock_date && isBefore(new Date(), new Date(note.capsule_unlock_date));
 
