@@ -6,6 +6,7 @@ import {
   PenLine, LayoutTemplate, Plus, CheckCircle2, Lightbulb,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { invokeEdge } from '@/lib/invokeEdge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import ReactMarkdown from 'react-markdown';
