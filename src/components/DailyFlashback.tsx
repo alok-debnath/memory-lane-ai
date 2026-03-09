@@ -4,7 +4,8 @@ import { Clock, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { format, differenceInCalendarDays } from 'date-fns';
+import { differenceInCalendarDays } from 'date-fns';
+import { useTimezone } from '@/hooks/useTimezone';
 
 const moodEmoji: Record<string, string> = {
   happy: '😊', sad: '😢', anxious: '😰', excited: '🤩', neutral: '😐',
