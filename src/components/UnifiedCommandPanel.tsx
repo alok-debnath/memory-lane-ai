@@ -63,6 +63,7 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
   const [liveTranscript, setLiveTranscript] = useState('');
   const [duration, setDuration] = useState(0);
   const [ttsEnabled, setTtsEnabled] = useState(() => localStorage.getItem('memora-tts') !== 'false');
+  const [pendingFiles, setPendingFiles] = useState<{ file: File; preview?: string }[]>([]);
 
   // -- Note state --
   const [noteMode, setNoteMode] = useState<'text' | 'template'>('text');
@@ -77,6 +78,7 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
   const finalTranscriptRef = useRef('');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -111,32 +113,89 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
   }, [open, stop]);
 
   // ===================== CHAT LOGIC =====================
-  const sendToAI = useCallback(async (text: string) => {
+  const sendToAI = useCallback(async (text: string, attachments?: ChatAttachment[]) => {
     if (!text.trim() || loading || !user) return;
-    const userMsg: Message = { role: 'user', content: text.trim() };
-    setMessages((prev) => {
-      const all = [...prev, userMsg];
-      (async () => {
-        setLoading(true);
-        try {
-          const { data, error } = await invokeEdge('memory-chat', {
-            messages: all.map((m) => ({ role: m.role, content: m.content })), userId: user.id,
-          });
-          if (error) throw error;
-          const reply = data.error ? `⚠️ ${data.error}` : data.reply;
-          setMessages((p) => [...p, { role: 'assistant', content: reply }]);
-          if (data.mutated) queryClient.invalidateQueries({ queryKey: ['memory-notes'] });
-          if (ttsEnabled && !data.error) speak(reply);
-        } catch (err: any) {
-          setMessages((p) => [...p, { role: 'assistant', content: `Something went wrong. ${err.message}` }]);
-        } finally {
-          setLoading(false);
-        }
-      })();
-      return all;
+
+    const userMsg: Message = { role: 'user', content: text.trim(), attachments };
+    const all = [...messages, userMsg];
+    setMessages(all);
+    setLoading(true);
+
+    try {
+      const { data, error } = await invokeEdge('memory-chat', {
+        messages: all.map((m) => ({
+          role: m.role,
+          content: m.role === 'user' && m.attachments?.length
+            ? `${m.content}\n\n${m.attachments.map((a) => `[Attached file: ${a.name} (${a.type}) — URL: ${a.url}]`).join('\n')}`
+            : m.content,
+        })),
+        userId: user.id,
+      });
+
+      if (error) throw error;
+      const reply = data.error ? `⚠️ ${data.error}` : data.reply;
+      setMessages((p) => [...p, { role: 'assistant', content: reply }]);
+      if (data.mutated) queryClient.invalidateQueries({ queryKey: ['memory-notes'] });
+      if (ttsEnabled && !data.error) speak(reply);
+    } catch (err: any) {
+      setMessages((p) => [...p, { role: 'assistant', content: `Something went wrong. ${err.message}` }]);
+    } finally {
+      setLoading(false);
+      setInput('');
+    }
+  }, [loading, user, messages, queryClient, ttsEnabled, speak]);
+
+  const uploadFile = useCallback(async (file: File): Promise<ChatAttachment | null> => {
+    if (!user) return null;
+    const path = `chat/${user.id}/${Date.now()}-${file.name}`;
+    const { error } = await supabase.storage.from('memory-attachments').upload(path, file);
+    if (error) {
+      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+      return null;
+    }
+    const { data: urlData } = supabase.storage.from('memory-attachments').getPublicUrl(path);
+    return { url: urlData.publicUrl, name: file.name, type: file.type, size: file.size };
+  }, [user, toast]);
+
+  const clearPendingFiles = useCallback(() => {
+    setPendingFiles((prev) => {
+      prev.forEach((f) => { if (f.preview) URL.revokeObjectURL(f.preview); });
+      return [];
     });
-    setInput('');
-  }, [loading, user, queryClient, ttsEnabled, speak]);
+  }, []);
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setPendingFiles((prev) => [
+      ...prev,
+      ...files.map((file) => ({
+        file,
+        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+      })),
+    ]);
+    e.target.value = '';
+  }, []);
+
+  const removePendingFile = useCallback((index: number) => {
+    setPendingFiles((prev) => {
+      const target = prev[index];
+      if (target?.preview) URL.revokeObjectURL(target.preview);
+      return prev.filter((_, i) => i !== index);
+    });
+  }, []);
+
+  const handleSend = useCallback(async (rawInput: string) => {
+    if ((!rawInput.trim() && pendingFiles.length === 0) || loading) return;
+
+    let attachments: ChatAttachment[] | undefined;
+    if (pendingFiles.length > 0) {
+      const uploaded = await Promise.all(pendingFiles.map((f) => uploadFile(f.file)));
+      attachments = uploaded.filter(Boolean) as ChatAttachment[];
+      clearPendingFiles();
+    }
+
+    await sendToAI(rawInput.trim() || 'Please process these files and save as memories.', attachments);
+  }, [pendingFiles, loading, uploadFile, clearPendingFiles, sendToAI]);
 
   const startListening = useCallback(async () => {
     stop();
