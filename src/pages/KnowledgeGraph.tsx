@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Network, X, Tag, Calendar, ChevronRight } from 'lucide-react';
+import PageInfoButton from '@/components/PageInfoButton';
 import { format } from 'date-fns';
 
 interface GraphMemory {
