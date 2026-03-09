@@ -20,6 +20,13 @@ export interface MemoryNote {
   capsule_unlock_date?: string | null;
   extracted_actions?: any[] | null;
   tags?: string[] | null;
+  people?: string[] | null;
+  locations?: string[] | null;
+  importance?: string | null;
+  life_area?: string | null;
+  context_tags?: { who?: string[]; what?: string; where?: string; why?: string } | null;
+  sentiment_score?: number | null;
+  linked_urls?: string[] | null;
 }
 
 interface MemoryCardProps {

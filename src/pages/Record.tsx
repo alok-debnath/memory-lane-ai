@@ -48,6 +48,13 @@ const Record: React.FC = () => {
         extracted_actions: data.extracted_actions || null,
         capsule_unlock_date: capsuleDate ? new Date(capsuleDate).toISOString() : null,
         tags: data.tags || [],
+        people: data.people || [],
+        locations: data.locations || [],
+        importance: data.importance || 'normal',
+        life_area: data.life_area || null,
+        context_tags: data.context_tags || {},
+        sentiment_score: data.sentiment_score ?? null,
+        linked_urls: data.linked_urls || [],
       };
       if (data.embedding) {
         insertPayload.embedding = data.embedding;

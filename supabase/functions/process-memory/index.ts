@@ -13,7 +13,6 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Run AI extraction and embedding generation in parallel
     const extractPromise = fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -25,11 +24,25 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an AI assistant that processes memory notes. Extract structured data from the user's input. Today's date: ${new Date().toISOString()}.
-            
+            content: `You are an AI assistant that processes memory notes. Extract ALL structured data from the user's input. Today's date: ${new Date().toISOString()}.
+
 For mood: analyze the emotional tone and assign one of: happy, sad, anxious, excited, neutral, grateful, frustrated, hopeful, nostalgic, motivated.
 
-For extracted_actions: identify any actionable items, tasks, or key facts. Each action should have a "text" (description) and "type" (one of: task, reminder, fact, decision).`
+For people: extract ALL people names mentioned (first names, full names, nicknames).
+
+For locations: extract ALL locations, places, venues, cities, countries mentioned.
+
+For importance: rate as "critical", "high", "normal", or "low" based on urgency, consequence, or emotional weight.
+
+For life_area: categorize into one of: career, family, health, finance, social, hobbies, education, travel, self-care, relationships, or null if unclear.
+
+For context_tags: extract structured context — who was involved, what happened, where it was, why it matters.
+
+For sentiment_score: rate from -1.0 (very negative) to 1.0 (very positive), 0 being neutral.
+
+For linked_urls: extract any URLs mentioned in the text.
+
+For extracted_actions: identify actionable items, tasks, or key facts. Each action should have a "text" (description) and "type" (one of: task, reminder, fact, decision).`
           },
           { role: "user", content: input },
         ],
@@ -37,7 +50,7 @@ For extracted_actions: identify any actionable items, tasks, or key facts. Each 
           type: "function",
           function: {
             name: "create_memory",
-            description: "Create a structured memory note from user input",
+            description: "Create a structured memory note from user input with rich metadata",
             parameters: {
               type: "object",
               properties: {
@@ -47,10 +60,49 @@ For extracted_actions: identify any actionable items, tasks, or key facts. Each 
                 is_recurring: { type: "boolean" },
                 recurrence_type: { type: "string", enum: ["yearly", "monthly", "weekly", "daily"], description: "null if not recurring" },
                 category: { type: "string", enum: ["personal", "work", "finance", "health", "other"] },
-                mood: { type: "string", enum: ["happy", "sad", "anxious", "excited", "neutral", "grateful", "frustrated", "hopeful", "nostalgic", "motivated"], description: "Detected emotional tone of the memory" },
+                mood: { type: "string", enum: ["happy", "sad", "anxious", "excited", "neutral", "grateful", "frustrated", "hopeful", "nostalgic", "motivated"] },
+                people: {
+                  type: "array",
+                  items: { type: "string" },
+                  description: "Names of people mentioned"
+                },
+                locations: {
+                  type: "array",
+                  items: { type: "string" },
+                  description: "Locations, places, venues mentioned"
+                },
+                importance: {
+                  type: "string",
+                  enum: ["critical", "high", "normal", "low"],
+                  description: "How important/urgent this memory is"
+                },
+                life_area: {
+                  type: "string",
+                  enum: ["career", "family", "health", "finance", "social", "hobbies", "education", "travel", "self-care", "relationships"],
+                  description: "Life area this memory belongs to, or null"
+                },
+                context_tags: {
+                  type: "object",
+                  properties: {
+                    who: { type: "array", items: { type: "string" }, description: "Who was involved" },
+                    what: { type: "string", description: "What happened" },
+                    where: { type: "string", description: "Where it happened" },
+                    why: { type: "string", description: "Why it matters" }
+                  },
+                  description: "Structured context about the memory"
+                },
+                sentiment_score: {
+                  type: "number",
+                  description: "Sentiment from -1.0 (negative) to 1.0 (positive)"
+                },
+                linked_urls: {
+                  type: "array",
+                  items: { type: "string" },
+                  description: "URLs mentioned in the text"
+                },
                 extracted_actions: {
                   type: "array",
-                  description: "Actionable items, tasks, or key facts extracted from input",
+                  description: "Actionable items, tasks, or key facts",
                   items: {
                     type: "object",
                     properties: {
@@ -66,7 +118,7 @@ For extracted_actions: identify any actionable items, tasks, or key facts. Each 
                   description: "3-7 relevant lowercase tags: people names, places, projects, topics, key entities. No hashtags.",
                 },
               },
-              required: ["title", "content", "is_recurring", "category", "mood", "tags"],
+              required: ["title", "content", "is_recurring", "category", "mood", "tags", "people", "locations", "importance", "sentiment_score"],
               additionalProperties: false,
             },
           },
