@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { invokeEdge } from '@/lib/invokeEdge';
 import { useAuth } from '@/contexts/AuthContext';
 import { FileText, Search, ShieldCheck, Clock, AlertTriangle, FileIcon, Image, Receipt, ScrollText, Award, Sparkles, Upload, Loader2, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
