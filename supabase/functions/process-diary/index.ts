@@ -108,6 +108,7 @@ You must call the extract_diary_insights function with your analysis. IMPORTANT:
       .insert({
         user_id: user.id,
         raw_text: text,
+        corrected_text: insights.corrected_text || text,
         structured_insights: insights,
         mood: insights.mood,
         energy_level: insights.energy_level,
