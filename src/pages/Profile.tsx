@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  User, Brain, Bell, LogOut, Calendar, Shield, Trash2,
+  Brain, Bell, LogOut, Calendar, Shield, Trash2,
   Loader2, Moon, ChevronDown,
 } from 'lucide-react';
 import { type MemoryNote } from '@/components/MemoryCard';
@@ -21,7 +21,6 @@ const Profile: React.FC = () => {
   const [changingPassword, setChangingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
-  
 
   const { data: notes = [] } = useQuery({
     queryKey: ['memory-notes'],
@@ -65,7 +64,117 @@ const Profile: React.FC = () => {
   };
 
   const handleDeleteAll = async () => {
-...
+    if (!confirm('Delete ALL memories? This cannot be undone.')) return;
+    try {
+      const { error } = await supabase.from('memory_notes').delete().eq('user_id', user!.id);
+      if (error) throw error;
+      toast({ title: 'All memories deleted' });
+      window.location.reload();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  const memberSince = user?.created_at ? format(new Date(user.created_at), 'MMMM yyyy') : '';
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-display font-bold text-foreground tracking-tight">Profile</h1>
+
+      {/* User card */}
+      <div className="native-card-elevated p-5 flex items-center gap-4">
+        <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shrink-0">
+          <span className="text-xl font-bold text-primary-foreground">
+            {(user?.user_metadata?.full_name || 'U')[0].toUpperCase()}
+          </span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-[17px] font-display font-bold text-foreground truncate">
+            {user?.user_metadata?.full_name || 'User'}
+          </h2>
+          <p className="text-[13px] text-muted-foreground truncate">{user?.email}</p>
+          {memberSince && <p className="text-[11px] text-muted-foreground/60 mt-0.5">Since {memberSince}</p>}
+        </div>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-2">
+        {stats.map((stat) => (
+          <div key={stat.label} className="native-card p-3.5 text-center">
+            <p className="text-xl font-display font-bold text-foreground">{stat.value}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{stat.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Category breakdown */}
+      {Object.keys(categoryBreakdown).length > 0 && (
+        <div className="native-card p-4">
+          <p className="section-label mb-3">Categories</p>
+          <div className="space-y-2.5">
+            {Object.entries(categoryBreakdown)
+              .sort(([, a], [, b]) => b - a)
+              .map(([cat, count]) => (
+                <div key={cat} className="flex items-center gap-3">
+                  <span className="text-[13px] capitalize text-foreground w-16 truncate">{cat}</span>
+                  <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(count / notes.length) * 100}%` }}
+                      transition={{ delay: 0.3, duration: 0.5 }}
+                      className="h-full rounded-full bg-primary"
+                    />
+                  </div>
+                  <span className="text-[11px] text-muted-foreground w-6 text-right">{count}</span>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* Settings group */}
+      <div>
+        <p className="section-label">Settings</p>
+        <div className="native-group">
+          {/* Theme */}
+          <div className="native-group-item justify-between">
+            <div className="flex items-center gap-3">
+              <Moon className="w-[18px] h-[18px] text-muted-foreground" />
+              <span className="text-[15px] text-foreground">Appearance</span>
+            </div>
+            <ThemeToggle />
+          </div>
+
+          {/* Change Password */}
+          <div>
+            <button
+              onClick={() => setChangingPassword(!changingPassword)}
+              className="native-group-item w-full justify-between"
+            >
+              <div className="flex items-center gap-3">
+                <Shield className="w-[18px] h-[18px] text-muted-foreground" />
+                <span className="text-[15px] text-foreground">Change Password</span>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${changingPassword ? 'rotate-180' : ''}`} />
+            </button>
+            {changingPassword && (
+              <form onSubmit={handleChangePassword} className="px-4 pb-4 space-y-3">
+                <Input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="New password (6+ characters)"
+                  className="h-10 rounded-xl bg-secondary/60 border-0 text-[14px]"
+                  minLength={6}
+                  required
+                />
+                <Button type="submit" size="sm" variant="gradient" className="w-full h-10 rounded-xl" disabled={passwordLoading}>
+                  {passwordLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Update Password'}
+                </Button>
+              </form>
+            )}
+          </div>
+
           {/* Export */}
           <div className="native-group-item justify-between">
             <span className="text-[15px] text-foreground">Export Memories</span>
