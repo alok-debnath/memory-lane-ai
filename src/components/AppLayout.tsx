@@ -16,10 +16,7 @@ const AppLayout: React.FC = () => {
       <div className="min-h-screen bg-background">
         <DesktopSidebar />
         <main className="pb-20 lg:pb-0 lg:pl-72">
-          <div className="mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-2xl lg:max-w-3xl relative">
-            <div className="absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-8 lg:right-8 z-10">
-              <PageInfoButton />
-            </div>
+          <div className="mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-2xl lg:max-w-3xl">
             <Outlet />
           </div>
         </main>
