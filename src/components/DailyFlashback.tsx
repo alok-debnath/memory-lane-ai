@@ -14,6 +14,7 @@ const moodEmoji: Record<string, string> = {
 
 const DailyFlashback: React.FC = () => {
   const { user } = useAuth();
+  const { formatTz } = useTimezone();
 
   const { data: flashbacks = [] } = useQuery({
     queryKey: ['flashback-memories'],
