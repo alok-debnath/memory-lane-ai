@@ -55,6 +55,7 @@ You must call the extract_diary_insights function with your analysis. IMPORTANT:
               parameters: {
                 type: "object",
                 properties: {
+                  corrected_text: { type: "string", description: "The user's original text rewritten with correct grammar, punctuation, spelling, and sentence structure. Preserve the original meaning and voice." },
                   summary: { type: "string", description: "2-3 sentence summary of the entry" },
                   key_points: {
                     type: "array",
