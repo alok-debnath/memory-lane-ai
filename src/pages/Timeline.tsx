@@ -88,7 +88,7 @@ const Timeline: React.FC = () => {
     else if (isYesterday(d)) label = 'Yesterday';
     else if (isThisWeek(d)) label = 'This Week';
     else if (isThisMonth(d)) label = 'This Month';
-    else label = format(d, 'MMMM yyyy');
+    else label = formatTz(d, 'MMMM yyyy');
     if (!buckets[label]) buckets[label] = [];
     buckets[label].push(note);
   });

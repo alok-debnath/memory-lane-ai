@@ -37,6 +37,7 @@ function toMarkdown(notes: MemoryNote[]): string {
 }
 
 function toCsv(notes: MemoryNote[]): string {
+  const tz = getDetectedTimezone();
   const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
   const header = 'Title,Content,Category,Created,Reminder,Recurring,Recurrence Type';
   const rows = notes.map((n) =>
@@ -44,8 +45,8 @@ function toCsv(notes: MemoryNote[]): string {
       escape(n.title),
       escape(n.content),
       escape(n.category || 'other'),
-      escape(format(new Date(n.created_at), 'yyyy-MM-dd HH:mm')),
-      n.reminder_date ? escape(format(new Date(n.reminder_date), 'yyyy-MM-dd HH:mm')) : '',
+      escape(formatInTz(n.created_at, tz, 'yyyy-MM-dd HH:mm')),
+      n.reminder_date ? escape(formatInTz(n.reminder_date, tz, 'yyyy-MM-dd HH:mm')) : '',
       n.is_recurring ? 'Yes' : 'No',
       escape(n.recurrence_type || ''),
     ].join(',')

@@ -96,8 +96,8 @@ const Stats: React.FC = () => {
     let streak = 0;
     let checkDate = today;
     while (true) {
-      const dayStr = format(checkDate, 'yyyy-MM-dd');
-      const hasNote = notes.some((n) => format(new Date(n.created_at), 'yyyy-MM-dd') === dayStr);
+      const dayStr = formatTz(checkDate, 'yyyy-MM-dd');
+      const hasNote = notes.some((n) => formatTz(n.created_at, 'yyyy-MM-dd') === dayStr);
       if (!hasNote && differenceInCalendarDays(today, checkDate) > 0) break;
       if (hasNote) streak++;
       if (differenceInCalendarDays(today, checkDate) === 0 && !hasNote) break;
