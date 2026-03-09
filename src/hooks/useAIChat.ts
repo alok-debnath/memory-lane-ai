@@ -125,7 +125,7 @@ export function useAIChat() {
               : m.content,
           })),
           userId: user.id,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          timezone,
         },
       });
 
