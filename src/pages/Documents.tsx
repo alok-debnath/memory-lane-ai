@@ -213,18 +213,20 @@ const Documents: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           <PageInfoButton />
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          size="sm"
-          className="shrink-0"
-        >
-          {uploading ? (
-            <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
-          ) : (
-            <Plus className="w-4 h-4 mr-1.5" />
-          )}
-          {uploading ? 'Uploading...' : 'Upload'}
-        </Button>
+          <Button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            size="sm"
+            className="shrink-0"
+          >
+            {uploading ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+            ) : (
+              <Plus className="w-4 h-4 mr-1.5" />
+            )}
+            {uploading ? 'Uploading...' : 'Upload'}
+          </Button>
+        </div>
       </div>
 
       {/* Expiring soon alert */}

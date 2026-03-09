@@ -169,7 +169,8 @@ const Review: React.FC = () => {
             {dueReviews.length} memor{dueReviews.length !== 1 ? 'ies' : 'y'} due for review
           </p>
         </div>
-        <Button
+        <div className="flex items-center gap-2">
+          <PageInfoButton />
           variant="outline"
           size="sm"
           onClick={() => setAddingMode(!addingMode)}
