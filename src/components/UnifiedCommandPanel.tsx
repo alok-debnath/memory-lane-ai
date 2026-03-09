@@ -243,8 +243,8 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
         setTimeout(() => { onOpenChange(false); resetNoteState(); }, 600);
       }
 
-      supabase.functions.invoke('detect-conflicts', {
-        body: { memoryId: savedId, content: data.content, title: savedTitle, userId: user!.id },
+      invokeEdge('detect-conflicts', {
+        memoryId: savedId, content: data.content, title: savedTitle, userId: user!.id,
       }).then(({ data: conflictData }) => {
         if (conflictData?.conflicts?.length > 0) setConflicts(conflictData.conflicts);
       }).catch(() => {});
