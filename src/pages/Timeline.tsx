@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { type MemoryNote } from '@/components/MemoryCard';
 import EditMemoryDialog from '@/components/EditMemoryDialog';
 import { Clock, Bell, Brain, ChevronRight, Search, Sparkles } from 'lucide-react';
+import PageInfoButton from '@/components/PageInfoButton';
 import { format, isToday, isYesterday, isThisWeek, isThisMonth } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
