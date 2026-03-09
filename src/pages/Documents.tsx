@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { format, isPast, isBefore, addDays } from 'date-fns';
+import PageInfoButton from '@/components/PageInfoButton';
 
 interface DocExtraction {
   id: string;
@@ -210,19 +211,22 @@ const Documents: React.FC = () => {
             {documents.length} document{documents.length !== 1 ? 's' : ''} · AI-extracted & searchable
           </p>
         </div>
-        <Button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          size="sm"
-          className="shrink-0"
-        >
-          {uploading ? (
-            <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
-          ) : (
-            <Plus className="w-4 h-4 mr-1.5" />
-          )}
-          {uploading ? 'Uploading...' : 'Upload'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <PageInfoButton />
+          <Button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            size="sm"
+            className="shrink-0"
+          >
+            {uploading ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+            ) : (
+              <Plus className="w-4 h-4 mr-1.5" />
+            )}
+            {uploading ? 'Uploading...' : 'Upload'}
+          </Button>
+        </div>
       </div>
 
       {/* Expiring soon alert */}

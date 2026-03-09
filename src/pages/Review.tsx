@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Brain, RotateCcw, ThumbsDown, ThumbsUp, Zap, Trophy, Plus, CheckCircle2 } from 'lucide-react';
+import PageInfoButton from '@/components/PageInfoButton';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -168,15 +169,18 @@ const Review: React.FC = () => {
             {dueReviews.length} memor{dueReviews.length !== 1 ? 'ies' : 'y'} due for review
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setAddingMode(!addingMode)}
-          className="rounded-xl"
-        >
-          <Plus className="w-4 h-4 mr-1" />
-          Add
-        </Button>
+        <div className="flex items-center gap-2">
+          <PageInfoButton />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setAddingMode(!addingMode)}
+            className="rounded-xl"
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            Add
+          </Button>
+        </div>
       </div>
 
       {/* Add memories to review */}

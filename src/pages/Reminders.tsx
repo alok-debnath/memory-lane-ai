@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { type MemoryNote } from '@/components/MemoryCard';
 import { Bell, Calendar, Repeat, CheckCircle } from 'lucide-react';
 import { format, isPast, isToday, isTomorrow, isThisWeek, isAfter } from 'date-fns';
+import PageInfoButton from '@/components/PageInfoButton';
 
 const Reminders: React.FC = () => {
   const { data: notes = [], isLoading } = useQuery({
@@ -49,9 +50,12 @@ const Reminders: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-display font-bold text-foreground tracking-tight">Reminders</h1>
-        <p className="text-[13px] text-muted-foreground mt-0.5">{notes.length} scheduled</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-display font-bold text-foreground tracking-tight">Reminders</h1>
+          <p className="text-[13px] text-muted-foreground mt-0.5">{notes.length} scheduled</p>
+        </div>
+        <PageInfoButton />
       </div>
 
       {isLoading ? (

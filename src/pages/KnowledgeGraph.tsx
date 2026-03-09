@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Network, X, Tag, Calendar, ChevronRight } from 'lucide-react';
+import PageInfoButton from '@/components/PageInfoButton';
 import { format } from 'date-fns';
 
 interface GraphMemory {
@@ -201,14 +202,17 @@ const KnowledgeGraph: React.FC = () => {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-display font-bold text-foreground tracking-tight flex items-center gap-2.5">
-          <Network className="w-6 h-6 text-primary" />
-          Knowledge Graph
-        </h1>
-        <p className="text-[13px] text-muted-foreground mt-0.5">
-          {graph.nodes.length} memories · {graph.edges.length} connections
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-display font-bold text-foreground tracking-tight flex items-center gap-2.5">
+            <Network className="w-6 h-6 text-primary" />
+            Knowledge Graph
+          </h1>
+          <p className="text-[13px] text-muted-foreground mt-0.5">
+            {graph.nodes.length} memories · {graph.edges.length} connections
+          </p>
+        </div>
+        <PageInfoButton />
       </div>
 
       {/* Category legend */}

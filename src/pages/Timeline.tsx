@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { type MemoryNote } from '@/components/MemoryCard';
 import EditMemoryDialog from '@/components/EditMemoryDialog';
 import { Clock, Bell, Brain, ChevronRight, Search, Sparkles } from 'lucide-react';
+import PageInfoButton from '@/components/PageInfoButton';
 import { format, isToday, isYesterday, isThisWeek, isThisMonth } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
@@ -94,12 +95,15 @@ const Timeline: React.FC = () => {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-display font-bold text-foreground tracking-tight flex items-center gap-2.5">
-          <Clock className="w-6 h-6 text-primary" />
-          Timeline
-        </h1>
-        <p className="text-[13px] text-muted-foreground mt-0.5">Your memories, chronologically</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-display font-bold text-foreground tracking-tight flex items-center gap-2.5">
+            <Clock className="w-6 h-6 text-primary" />
+            Timeline
+          </h1>
+          <p className="text-[13px] text-muted-foreground mt-0.5">Your memories, chronologically</p>
+        </div>
+        <PageInfoButton />
       </div>
 
       {/* Search */}
