@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Download, FileText, FileSpreadsheet, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { type MemoryNote } from '@/components/MemoryCard';
-import { format } from 'date-fns';
+import { formatInTz, getDetectedTimezone } from '@/lib/timezone';
 import {
   DropdownMenu,
   DropdownMenuContent,
