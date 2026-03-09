@@ -110,8 +110,8 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
       (async () => {
         setLoading(true);
         try {
-          const { data, error } = await supabase.functions.invoke('memory-chat', {
-            body: { messages: all.map((m) => ({ role: m.role, content: m.content })), userId: user.id },
+          const { data, error } = await invokeEdge('memory-chat', {
+            messages: all.map((m) => ({ role: m.role, content: m.content })), userId: user.id,
           });
           if (error) throw error;
           const reply = data.error ? `⚠️ ${data.error}` : data.reply;
