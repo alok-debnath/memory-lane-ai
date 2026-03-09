@@ -428,7 +428,7 @@ const Documents: React.FC = () => {
                   <p className={`text-[15px] font-semibold mt-0.5 ${
                     isPast(new Date(selectedDoc.expiry_date)) ? 'text-destructive' : 'text-foreground'
                   }`}>
-                    {format(new Date(selectedDoc.expiry_date), 'MMMM d, yyyy')}
+                    {formatTz(selectedDoc.expiry_date, 'MMMM d, yyyy')}
                     {isPast(new Date(selectedDoc.expiry_date)) && ' (Expired)'}
                   </p>
                 </div>
