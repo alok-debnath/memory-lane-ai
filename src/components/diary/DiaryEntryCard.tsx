@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { format } from 'date-fns';
+import { useTimezone } from '@/hooks/useTimezone';
 import { ChevronDown, ChevronUp, Sparkles, Heart, Zap, Tag } from 'lucide-react';
 
 interface DiaryEntryCardProps {
