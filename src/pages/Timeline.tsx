@@ -6,7 +6,8 @@ import { type MemoryNote } from '@/components/MemoryCard';
 import EditMemoryDialog from '@/components/EditMemoryDialog';
 import { Clock, Bell, Brain, ChevronRight, Search, Sparkles } from 'lucide-react';
 import PageInfoButton from '@/components/PageInfoButton';
-import { format, isToday, isYesterday, isThisWeek, isThisMonth } from 'date-fns';
+import { isToday, isYesterday, isThisWeek, isThisMonth } from 'date-fns';
+import { useTimezone } from '@/hooks/useTimezone';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 
