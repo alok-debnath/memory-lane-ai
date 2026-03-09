@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Bell, Trash2, Tag, Pencil, Paperclip, ChevronRight, Volume2, VolumeX, Lock } from 'lucide-react';
-import { format, isBefore } from 'date-fns';
+import { isBefore } from 'date-fns';
+import { useTimezone } from '@/hooks/useTimezone';
 import { supabase } from '@/integrations/supabase/client';
 import ShareMemory from '@/components/ShareMemory';
 import { useTTS } from '@/hooks/useTTS';
