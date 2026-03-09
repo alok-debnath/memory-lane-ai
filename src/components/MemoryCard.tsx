@@ -109,7 +109,7 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete, onEdit }
         </div>
         {isLocked ? (
           <p className="text-[13px] text-muted-foreground leading-snug mt-0.5 italic">
-            🔒 Locked until {format(new Date(note.capsule_unlock_date!), 'MMM d, yyyy')}
+            🔒 Locked until {formatTz(note.capsule_unlock_date!, 'MMM d, yyyy')}
           </p>
         ) : (
           <p className="text-[13px] text-muted-foreground leading-snug line-clamp-1 mt-0.5">{note.content}</p>
