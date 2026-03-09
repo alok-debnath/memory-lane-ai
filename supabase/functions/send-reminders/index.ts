@@ -59,6 +59,11 @@ serve(async (req) => {
     const tzMap: Record<string, string> = {};
     for (const p of profiles || []) tzMap[p.id] = p.timezone || 'UTC';
 
+    // Fetch notification preferences
+    const { data: notifPrefs } = await supabase.from("notification_preferences").select("user_id, email_enabled").in("user_id", userIds);
+    const emailEnabledMap: Record<string, boolean> = {};
+    for (const pref of notifPrefs || []) emailEnabledMap[pref.user_id] = pref.email_enabled ?? true;
+
     let sentCount = 0;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
