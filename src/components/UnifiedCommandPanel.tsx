@@ -525,6 +525,16 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
                                 : 'bg-secondary/60 text-foreground rounded-bl-md'
                             }`}
                           >
+                            {msg.attachments?.length ? (
+                              <div className="flex flex-wrap gap-1.5 mb-2">
+                                {msg.attachments.map((a, j) => (
+                                  <div key={j} className="flex items-center gap-1 text-[11px] opacity-80 bg-background/20 rounded-lg px-2 py-1">
+                                    {a.type.startsWith('image/') ? <Image className="w-3 h-3" /> : <Paperclip className="w-3 h-3" />}
+                                    <span className="truncate max-w-[100px]">{a.name}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null}
                             {msg.role === 'assistant' ? (
                               <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>p:not(:last-child)]:mb-1.5 [&>ul]:my-1 [&>ol]:my-1 [&>li]:text-[13px]">
                                 <ReactMarkdown>{msg.content}</ReactMarkdown>
