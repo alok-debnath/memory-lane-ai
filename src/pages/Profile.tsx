@@ -28,12 +28,55 @@ const Profile: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
 
+  const queryClient = useQueryClient();
+
   const { data: notes = [] } = useQuery({
     queryKey: ['memory-notes'],
     queryFn: async () => {
       const { data, error } = await supabase.from('memory_notes').select('*');
       if (error) throw error;
       return data as MemoryNote[];
+    },
+  });
+
+  const { data: notificationPrefs } = useQuery({
+    queryKey: ['notification-preferences'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('notification_preferences')
+        .select('*')
+        .eq('user_id', user!.id)
+        .single();
+      if (error && error.code === 'PGRST116') {
+        // Create default preferences if they don't exist
+        const { data: newPrefs, error: insertError } = await supabase
+          .from('notification_preferences')
+          .insert({ user_id: user!.id })
+          .select()
+          .single();
+        if (insertError) throw insertError;
+        return newPrefs;
+      }
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const updateNotificationPref = useMutation({
+    mutationFn: async ({ field, value }: { field: string; value: boolean }) => {
+      const { error } = await supabase
+        .from('notification_preferences')
+        .update({ [field]: value })
+        .eq('user_id', user!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notification-preferences'] });
+      toast({ title: 'Preferences updated' });
+    },
+    onError: (err: any) => {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
     },
   });
 
