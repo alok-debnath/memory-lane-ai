@@ -253,7 +253,7 @@ const Documents: React.FC = () => {
                   {doc.key_details?.brand || doc.memory_notes?.title || 'Document'}
                 </p>
                 <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium mt-0.5">
-                  Expires {format(new Date(doc.expiry_date!), 'MMM d, yyyy')}
+                  Expires {formatTz(doc.expiry_date!, 'MMM d, yyyy')}
                 </p>
               </div>
             ))}
