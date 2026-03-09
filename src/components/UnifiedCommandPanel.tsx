@@ -591,8 +591,40 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
 
                     {/* Chat Input */}
                     <div className="px-3 py-2.5 pb-safe">
+                      {pendingFiles.length > 0 && (
+                        <div className="pb-2 flex flex-wrap gap-1.5">
+                          {pendingFiles.map((f, i) => (
+                            <div key={i} className="relative group">
+                              {f.preview ? (
+                                <img src={f.preview} alt={f.file.name} className="w-12 h-12 rounded-lg object-cover border border-border/50" />
+                              ) : (
+                                <div className="w-12 h-12 rounded-lg bg-secondary/60 border border-border/50 flex items-center justify-center">
+                                  <Paperclip className="w-4 h-4 text-muted-foreground" />
+                                </div>
+                              )}
+                              <button
+                                onClick={() => removePendingFile(i)}
+                                className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       {chatMode === 'voice' ? (
-                        <div className="flex flex-col items-center gap-1.5 py-1">
+                        <div className="relative flex flex-col items-center gap-1.5 py-1 w-full">
+                          {!isListening && !loading && (
+                            <button
+                              onClick={() => fileInputRef.current?.click()}
+                              className="absolute left-0 bottom-1 h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary transition-all"
+                              title="Attach file"
+                            >
+                              <Paperclip className="w-4 h-4" />
+                            </button>
+                          )}
+
                           <AnimatePresence mode="wait">
                             {loading ? (
                               <motion.div key="proc" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} className="flex flex-col items-center gap-1.5">
@@ -630,19 +662,27 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
                         </div>
                       ) : (
                         <div className="flex gap-2 items-center">
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={loading}
+                            className="h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary transition-all disabled:opacity-40"
+                            title="Attach file"
+                          >
+                            <Paperclip className="w-4 h-4" />
+                          </button>
                           <input
                             ref={inputRef}
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && sendToAI(input)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSend(input)}
                             placeholder="Type a message..."
                             disabled={loading}
                             className="flex-1 h-10 rounded-xl bg-secondary/50 border-0 px-3.5 text-[13px] text-foreground placeholder:text-muted-foreground/50
                               focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all disabled:opacity-50"
                           />
                           <button
-                            onClick={() => sendToAI(input)}
-                            disabled={!input.trim() || loading}
+                            onClick={() => handleSend(input)}
+                            disabled={(!input.trim() && pendingFiles.length === 0) || loading}
                             className="h-10 w-10 shrink-0 rounded-xl btn-gradient flex items-center justify-center disabled:opacity-40"
                           >
                             {loading ? <Loader2 className="w-4 h-4 animate-spin text-primary-foreground" /> : <Send className="w-4 h-4 text-primary-foreground" />}
