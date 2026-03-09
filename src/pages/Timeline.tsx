@@ -211,7 +211,7 @@ const Timeline: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-[11px] text-muted-foreground/50">
-                        {format(new Date(note.created_at), 'h:mm a')}
+                        {formatTz(note.created_at, 'h:mm a')}
                       </span>
                       <ChevronRight className="w-4 h-4 text-muted-foreground/30" />
                     </div>
