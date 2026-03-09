@@ -9,6 +9,7 @@ import MemoryCard, { type MemoryNote } from '@/components/MemoryCard';
 import EditMemoryDialog from '@/components/EditMemoryDialog';
 import DailyFlashback from '@/components/DailyFlashback';
 import { Brain, Search, Bell, Sparkles } from 'lucide-react';
+import PageInfoButton from '@/components/PageInfoButton';
 
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
