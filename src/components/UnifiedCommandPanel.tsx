@@ -335,6 +335,7 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
   const handleClose = () => {
     onOpenChange(false);
     stop();
+    clearPendingFiles();
     resetNoteState();
   };
 
