@@ -42,7 +42,7 @@ serve(async (req) => {
           {
             role: "system",
             content: `You are a personal diary AI analyst. Analyze the user's diary entry and extract structured insights.
-You must call the extract_diary_insights function with your analysis.`
+You must call the extract_diary_insights function with your analysis. IMPORTANT: Always provide a corrected_text field with the user's text rewritten with proper grammar, punctuation, spelling, and sentence structure while preserving their original meaning and voice.`
           },
           { role: "user", content: text },
         ],
