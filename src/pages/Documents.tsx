@@ -371,7 +371,7 @@ const Documents: React.FC = () => {
                         isPast(new Date(doc.expiry_date)) ? 'text-destructive' : 'text-primary'
                       }`}>
                         <Clock className="w-3 h-3" />
-                        {isPast(new Date(doc.expiry_date)) ? 'Expired' : `Expires ${format(new Date(doc.expiry_date), 'MMM d, yyyy')}`}
+                        {isPast(new Date(doc.expiry_date)) ? 'Expired' : `Expires ${formatTz(doc.expiry_date, 'MMM d, yyyy')}`}
                       </span>
                     )}
                   </div>
