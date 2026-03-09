@@ -8,6 +8,7 @@ import VoiceRecorder from '@/components/VoiceRecorder';
 import DiaryEntryCard from '@/components/diary/DiaryEntryCard';
 import DiaryTextInput from '@/components/diary/DiaryTextInput';
 import { BookOpen, Mic, Keyboard } from 'lucide-react';
+import PageInfoButton from '@/components/PageInfoButton';
 
 const Diary: React.FC = () => {
   const { user } = useAuth();
