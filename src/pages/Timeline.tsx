@@ -205,7 +205,7 @@ const Timeline: React.FC = () => {
                       {note.reminder_date && (
                         <span className="flex items-center gap-1 mt-1 text-[11px] text-primary font-medium">
                           <Bell className="w-3 h-3" />
-                          {format(new Date(note.reminder_date), 'MMM d')}
+                          {formatTz(note.reminder_date, 'MMM d')}
                         </span>
                       )}
                     </div>
