@@ -4,6 +4,7 @@ import TextNoteInput from '@/components/TextNoteInput';
 import MemoryTemplates, { type MemoryTemplate } from '@/components/MemoryTemplates';
 import CapsuleDatePicker from '@/components/CapsuleDatePicker';
 import { supabase } from '@/integrations/supabase/client';
+import { invokeEdge } from '@/lib/invokeEdge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
