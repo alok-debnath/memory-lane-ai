@@ -181,6 +181,24 @@ const TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "attach_file_to_memory",
+      description: "Attach a file (image, document, etc.) that the user uploaded in chat to a memory. Use after creating a memory when the user shared files they want attached.",
+      parameters: {
+        type: "object",
+        properties: {
+          memory_id: { type: "string", description: "UUID of the memory to attach the file to" },
+          file_url: { type: "string", description: "The full URL of the uploaded file" },
+          file_name: { type: "string", description: "Original file name" },
+          file_type: { type: "string", description: "MIME type of the file" },
+        },
+        required: ["memory_id", "file_url", "file_name", "file_type"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 async function generateEmbedding(text: string, apiKey: string): Promise<number[] | null> {
