@@ -64,7 +64,7 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
   const [conflicts, setConflicts] = useState<any[] | null>(null);
   const [lastSavedMemory, setLastSavedMemory] = useState<{ id: string; title: string } | null>(null);
 
-  const { user, timezone } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
