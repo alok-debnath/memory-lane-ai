@@ -203,7 +203,7 @@ const UnifiedCommandPanel: React.FC<UnifiedCommandPanelProps> = ({ open, onOpenC
     setConflicts(null);
     try {
       const { data, error } = await supabase.functions.invoke('process-memory', {
-        body: { input: inputText, isAudio: false },
+        body: { input: inputText, isAudio: false, timezone },
       });
       if (error) throw error;
 

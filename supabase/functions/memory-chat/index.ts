@@ -496,8 +496,7 @@ serve(async (req) => {
 
 8. **UNDO & HISTORY**: Every edit and delete is automatically versioned for 7 days. When the user says "undo", "revert", "restore", "what did I delete", or "I accidentally deleted...", use the 'history' tool with action='list' to see changes, action='undo' to revert the last change, or action='restore' with a history_id to restore a specific version. Always reassure them that nothing is permanently lost for 7 days.
 
-Today's date: ${new Date().toISOString().split('T')[0]}
-Format dates in a human-friendly way (e.g., "March 15, 2026" not ISO strings).
+Today's date: ${new Date().toISOString().split('T')[0]}. The user's timezone is ${userTz}. When the user says relative times like "at 3pm" or "tomorrow morning", interpret them in their timezone and store reminder_date as UTC ISO 8601. When displaying dates back to the user, format them in a human-friendly way (e.g., "March 15, 2026 at 3:00 PM") — these will be shown in the user's local time.
 Use markdown only when it genuinely helps readability (lists, bold for key info). Don't over-format simple answers.
 
 9. **FILE ATTACHMENTS**: When the user shares files in chat, the file URLs appear in their message as [Attached file: name (type) — URL: ...]. You can:

@@ -9,7 +9,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { input } = await req.json();
+    const { input, timezone } = await req.json();
+    const userTz = timezone || 'UTC';
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -24,7 +25,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an AI assistant that processes memory notes. Extract ALL structured data from the user's input. Today's date: ${new Date().toISOString()}.
+            content: `You are an AI assistant that processes memory notes. Extract ALL structured data from the user's input. Today's date: ${new Date().toISOString()}. The user's timezone is ${userTz}. When the user mentions relative dates/times (e.g. "tomorrow at 3pm", "next Monday"), interpret them in the user's timezone and output the reminder_date as a full ISO 8601 string in UTC.
 
 For mood: analyze the emotional tone and assign one of: happy, sad, anxious, excited, neutral, grateful, frustrated, hopeful, nostalgic, motivated.
 

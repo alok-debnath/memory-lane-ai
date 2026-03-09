@@ -67,8 +67,13 @@ serve(async (req) => {
       const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(userId);
       if (userError || !user?.email) return;
 
+      const userTz = tzMap[userId] || 'UTC';
+      const fmtDate = (d: string) => {
+        try { return new Date(d).toLocaleString('en-US', { timeZone: userTz, dateStyle: 'medium', timeStyle: 'short' }); }
+        catch { return new Date(d).toLocaleString(); }
+      };
       const reminderList = reminders
-        .map((r) => `• ${r.title}: ${r.content}${r.reminder_date ? ` (Due: ${new Date(r.reminder_date).toLocaleString()})` : ''}`)
+        .map((r) => `• ${r.title}: ${r.content}${r.reminder_date ? ` (Due: ${fmtDate(r.reminder_date)})` : ''}`)
         .join("\n");
 
       // Generate email body with AI (non-blocking if fails)

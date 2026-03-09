@@ -54,7 +54,7 @@ const NewMemoryDialog: React.FC<NewMemoryDialogProps> = ({ open, onOpenChange })
     setConflicts(null);
     try {
       const { data, error } = await supabase.functions.invoke('process-memory', {
-        body: { input, isAudio: false },
+        body: { input, isAudio: false, timezone },
       });
 
       if (error) throw error;
