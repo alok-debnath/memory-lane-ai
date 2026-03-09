@@ -5,14 +5,14 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
-  User, Brain, Bell, LogOut, Calendar, Shield, Download, Trash2,
-  ChevronRight, Loader2, CheckCircle, Moon, ChevronDown,
+  Brain, Bell, LogOut, Calendar, Shield, Trash2,
+  Loader2, Moon, ChevronDown,
 } from 'lucide-react';
 import { type MemoryNote } from '@/components/MemoryCard';
 import { useToast } from '@/hooks/use-toast';
 import ThemeToggle from '@/components/ThemeToggle';
+import ExportMemories from '@/components/ExportMemories';
 import { format } from 'date-fns';
 
 const Profile: React.FC = () => {
@@ -21,7 +21,6 @@ const Profile: React.FC = () => {
   const [changingPassword, setChangingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const [exporting, setExporting] = useState(false);
 
   const { data: notes = [] } = useQuery({
     queryKey: ['memory-notes'],
@@ -61,27 +60,6 @@ const Profile: React.FC = () => {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
       setPasswordLoading(false);
-    }
-  };
-
-  const handleExport = async () => {
-    setExporting(true);
-    try {
-      const exportData = notes.map((n) => ({
-        title: n.title, content: n.content, category: n.category,
-        reminder_date: n.reminder_date, is_recurring: n.is_recurring,
-        recurrence_type: n.recurrence_type, created_at: n.created_at,
-      }));
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `memora-export-${format(new Date(), 'yyyy-MM-dd')}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast({ title: 'Exported!', description: `${notes.length} memories` });
-    } finally {
-      setExporting(false);
     }
   };
 
@@ -198,17 +176,10 @@ const Profile: React.FC = () => {
           </div>
 
           {/* Export */}
-          <button
-            onClick={handleExport}
-            disabled={exporting || notes.length === 0}
-            className="native-group-item w-full justify-between disabled:opacity-40"
-          >
-            <div className="flex items-center gap-3">
-              <Download className="w-[18px] h-[18px] text-muted-foreground" />
-              <span className="text-[15px] text-foreground">Export Memories</span>
-            </div>
-            <span className="text-[13px] text-muted-foreground">{notes.length}</span>
-          </button>
+          <div className="native-group-item justify-between">
+            <span className="text-[15px] text-foreground">Export Memories</span>
+            <ExportMemories notes={notes} />
+          </div>
         </div>
       </div>
 

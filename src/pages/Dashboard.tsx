@@ -9,7 +9,7 @@ import MemoryCard, { type MemoryNote } from '@/components/MemoryCard';
 import EditMemoryDialog from '@/components/EditMemoryDialog';
 import DailyFlashback from '@/components/DailyFlashback';
 import { Brain, Search, Bell, Sparkles } from 'lucide-react';
-import ExportMemories from '@/components/ExportMemories';
+
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { isAfter, isBefore, addDays, format } from 'date-fns';
@@ -169,7 +169,6 @@ const Dashboard: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <ExportMemories notes={notes} />
           <div className="lg:hidden">
             <ThemeToggle />
           </div>
