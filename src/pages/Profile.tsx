@@ -7,14 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Brain, Bell, LogOut, Calendar, Shield, Trash2,
-  Loader2, Moon, ChevronDown,
+  Loader2, Moon, ChevronDown, Globe,
 } from 'lucide-react';
 import { type MemoryNote } from '@/components/MemoryCard';
 import { useToast } from '@/hooks/use-toast';
 import ThemeToggle from '@/components/ThemeToggle';
 import ExportMemories from '@/components/ExportMemories';
 import PageInfoButton from '@/components/PageInfoButton';
-import { format } from 'date-fns';
+import { useTimezone } from '@/hooks/useTimezone';
+import { getAllTimezones, formatTimezoneLabel } from '@/lib/timezone';
 
 const Profile: React.FC = () => {
   const { user, signOut } = useAuth();
