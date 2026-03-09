@@ -184,6 +184,63 @@ const Profile: React.FC = () => {
         </div>
       )}
 
+      {/* Notifications group */}
+      <div>
+        <p className="section-label">Notifications</p>
+        <div className="native-group">
+          <div className="native-group-item justify-between">
+            <div className="flex items-center gap-3">
+              <Bell className="w-[18px] h-[18px] text-muted-foreground" />
+              <div>
+                <Label htmlFor="email-notif" className="text-[15px] text-foreground font-normal cursor-pointer">
+                  Email Reminders
+                </Label>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Get reminder emails</p>
+              </div>
+            </div>
+            <Switch
+              id="email-notif"
+              checked={notificationPrefs?.email_enabled ?? true}
+              onCheckedChange={(checked) => updateNotificationPref.mutate({ field: 'email_enabled', value: checked })}
+            />
+          </div>
+
+          <div className="native-group-item justify-between">
+            <div className="flex items-center gap-3">
+              <Bell className="w-[18px] h-[18px] text-muted-foreground" />
+              <div>
+                <Label htmlFor="browser-notif" className="text-[15px] text-foreground font-normal cursor-pointer">
+                  Browser Notifications
+                </Label>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Desktop notifications</p>
+              </div>
+            </div>
+            <Switch
+              id="browser-notif"
+              checked={notificationPrefs?.browser_notifications_enabled ?? true}
+              onCheckedChange={(checked) => updateNotificationPref.mutate({ field: 'browser_notifications_enabled', value: checked })}
+            />
+          </div>
+
+          <div className="native-group-item justify-between">
+            <div className="flex items-center gap-3">
+              <Bell className="w-[18px] h-[18px] text-muted-foreground" />
+              <div>
+                <Label htmlFor="push-notif" className="text-[15px] text-foreground font-normal cursor-pointer">
+                  Push Notifications
+                </Label>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Mobile push alerts</p>
+              </div>
+            </div>
+            <Switch
+              id="push-notif"
+              checked={notificationPrefs?.push_notifications_enabled ?? true}
+              onCheckedChange={(checked) => updateNotificationPref.mutate({ field: 'push_notifications_enabled', value: checked })}
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Settings group */}
       <div>
         <p className="section-label">Settings</p>

@@ -69,6 +69,12 @@ serve(async (req) => {
 
     // Process all users in parallel
     await Promise.all(Object.entries(userReminders).map(async ([userId, reminders]) => {
+      // Check if user has email enabled
+      if (!emailEnabledMap[userId]) {
+        console.log(`[REMINDER] Email disabled for user ${userId}`);
+        return;
+      }
+
       const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(userId);
       if (userError || !user?.email) return;
 
@@ -104,7 +110,31 @@ serve(async (req) => {
         } catch {}
       }
 
-      console.log(`[REMINDER] To: ${user.email}\n${emailBody}`);
+      // Send actual email via Lovable transactional email API
+      try {
+        const emailResp = await fetch("https://api.lovable.app/v1/email/send", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            to: user.email,
+            subject: `Reminder: ${reminders.length > 1 ? `${reminders.length} upcoming reminders` : reminders[0].title}`,
+            html: emailBody.replace(/\n/g, "<br>"),
+            purpose: "transactional",
+          }),
+        });
+
+        if (!emailResp.ok) {
+          const errText = await emailResp.text();
+          console.error(`[REMINDER] Email send failed for ${user.email}:`, errText);
+        } else {
+          console.log(`[REMINDER] Email sent to ${user.email}`);
+        }
+      } catch (emailErr) {
+        console.error(`[REMINDER] Email error for ${user.email}:`, emailErr);
+      }
 
       // Update recurring reminders in parallel
       await Promise.all(reminders
