@@ -211,7 +211,8 @@ const Documents: React.FC = () => {
             {documents.length} document{documents.length !== 1 ? 's' : ''} · AI-extracted & searchable
           </p>
         </div>
-        <Button
+        <div className="flex items-center gap-2">
+          <PageInfoButton />
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
           size="sm"

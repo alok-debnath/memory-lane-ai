@@ -155,7 +155,7 @@ const Stats: React.FC = () => {
           </h1>
           <p className="text-[13px] text-muted-foreground mt-0.5">Your memory activity overview</p>
         </div>
-        
+        <PageInfoButton />
       </div>
 
       {/* Stat cards */}
