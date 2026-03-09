@@ -28,6 +28,7 @@ interface EditMemoryDialogProps {
   note: MemoryNote | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onDelete?: (id: string) => void;
 }
 
 const categories = ['personal', 'work', 'finance', 'health', 'other'];
