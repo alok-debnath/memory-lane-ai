@@ -304,7 +304,15 @@ const AIChatPanel: React.FC = () => {
               {/* Input */}
               <div className="px-3 py-2.5 pb-safe">
                 {mode === 'voice' ? (
-                  <div className="flex flex-col items-center gap-1.5 py-1">
+                  <div className="flex flex-col items-center gap-1.5 py-1 relative">
+                    {/* Attach button in voice mode */}
+                    {!voiceInput.isListening && !loading && (
+                      <button onClick={() => fileInputRef.current?.click()}
+                        className="absolute left-0 bottom-1 h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary transition-all"
+                        title="Attach file">
+                        <Paperclip className="w-4 h-4" />
+                      </button>
+                    )}
                     <AnimatePresence mode="wait">
                       {loading ? (
                         <motion.div key="proc" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
