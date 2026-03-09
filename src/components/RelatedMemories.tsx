@@ -1,6 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { invokeEdge } from '@/lib/invokeEdge';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link2, Sparkles } from 'lucide-react';
 import { type MemoryNote } from '@/components/MemoryCard';
