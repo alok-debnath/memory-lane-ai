@@ -52,15 +52,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .single();
 
         if (error && error.code === 'PGRST116') {
-          // No profile exists — create one with auto-detected timezone
           const detected = getDetectedTimezone();
           await (supabase as any).from('profiles').insert({
             id: user.id,
             timezone: detected,
           });
           setTimezone(detected);
+          setEdgeTimezone(detected);
         } else if (profile) {
-          setTimezone(profile.timezone || getDetectedTimezone());
+          const tz = profile.timezone || getDetectedTimezone();
+          setTimezone(tz);
+          setEdgeTimezone(tz);
         }
       } catch {
         setTimezone(getDetectedTimezone());
