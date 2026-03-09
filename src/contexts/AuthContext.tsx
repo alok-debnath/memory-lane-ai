@@ -95,6 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateTimezone = async (tz: string) => {
     if (!user) return;
     setTimezone(tz);
+    setEdgeTimezone(tz);
     try {
       await (supabase as any).from('profiles').update({ timezone: tz }).eq('id', user.id);
     } catch {
