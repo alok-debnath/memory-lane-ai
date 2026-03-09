@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Brain, RotateCcw, ThumbsDown, ThumbsUp, Zap, Trophy, Plus, CheckCircle2 } from 'lucide-react';
+import PageInfoButton from '@/components/PageInfoButton';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
