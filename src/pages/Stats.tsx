@@ -76,20 +76,20 @@ const Stats: React.FC = () => {
       neutral: 3, nostalgic: 2, anxious: 2, frustrated: 1, sad: 1,
     };
     const moodTrend = trendDays.map((day) => {
-      const dayStr = format(day, 'yyyy-MM-dd');
-      const dayNotes = notes.filter((n) => format(new Date(n.created_at), 'yyyy-MM-dd') === dayStr && n.mood);
+      const dayStr = formatTz(day, 'yyyy-MM-dd');
+      const dayNotes = notes.filter((n) => formatTz(n.created_at, 'yyyy-MM-dd') === dayStr && n.mood);
       const avgMood = dayNotes.length > 0
         ? dayNotes.reduce((sum, n) => sum + (moodValues[n.mood!] || 3), 0) / dayNotes.length
         : 0;
-      return { day: format(day, 'EEE'), value: Math.round(avgMood * 10) / 10, count: dayNotes.length };
+      return { day: formatTz(day, 'EEE'), value: Math.round(avgMood * 10) / 10, count: dayNotes.length };
     });
 
     // Weekly activity
     const weekDays = eachDayOfInterval({ start: subDays(today, 6), end: today });
     const weeklyActivity = weekDays.map((day) => {
-      const dayStr = format(day, 'yyyy-MM-dd');
-      const count = notes.filter((n) => format(new Date(n.created_at), 'yyyy-MM-dd') === dayStr).length;
-      return { day: format(day, 'EEE'), count };
+      const dayStr = formatTz(day, 'yyyy-MM-dd');
+      const count = notes.filter((n) => formatTz(n.created_at, 'yyyy-MM-dd') === dayStr).length;
+      return { day: formatTz(day, 'EEE'), count };
     });
 
     // Streak
