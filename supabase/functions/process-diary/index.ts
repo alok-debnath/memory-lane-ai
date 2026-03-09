@@ -79,7 +79,7 @@ You must call the extract_diary_insights function with your analysis. IMPORTANT:
                   dislikes: { type: "array", items: { type: "string" }, description: "Things the user expressed disliking" },
                   action_items: { type: "array", items: { type: "string" }, description: "Any action items or tasks mentioned" }
                 },
-                required: ["summary", "key_points", "mood", "energy_level", "topics"],
+                required: ["corrected_text", "summary", "key_points", "mood", "energy_level", "topics"],
                 additionalProperties: false,
               },
             },
