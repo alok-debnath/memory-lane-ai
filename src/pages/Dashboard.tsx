@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { isAfter, isBefore, addDays, format } from 'date-fns';
 import ThemeToggle from '@/components/ThemeToggle';
 import NudgeCards from '@/components/dashboard/NudgeCards';
+import DashboardSummary from '@/components/dashboard/DashboardSummary';
 
 const categoryEmoji: Record<string, string> = {
   personal: '🏠', work: '💼', finance: '💰', health: '❤️', other: '📝',
