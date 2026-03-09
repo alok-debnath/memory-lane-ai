@@ -422,6 +422,33 @@ const EditMemoryDialog: React.FC<EditMemoryDialogProps> = ({ note, open, onOpenC
                     Save Changes
                   </Button>
 
+                  {/* Quick Actions */}
+                  <div className="flex items-center justify-center gap-2 pt-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => speaking ? stop() : speak(`${title}. ${content}`)}
+                      className="h-9 px-3 rounded-xl text-[13px] gap-1.5"
+                    >
+                      {speaking ? <VolumeX className="w-4 h-4 text-primary" /> : <Volume2 className="w-4 h-4" />}
+                      {speaking ? 'Stop' : 'Read Aloud'}
+                    </Button>
+                    <ShareMemory memoryId={note.id} title={note.title} />
+                    {onDelete && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => { onDelete(note.id); onOpenChange(false); }}
+                        className="h-9 px-3 rounded-xl text-[13px] gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </Button>
+                    )}
+                  </div>
+
                   <RelatedMemories
                     note={note}
                     onSelect={(related) => {
