@@ -78,7 +78,7 @@ const Profile: React.FC = () => {
     }
   };
 
-  const memberSince = user?.created_at ? format(new Date(user.created_at), 'MMMM yyyy') : '';
+  const memberSince = user?.created_at ? formatTz(user.created_at, 'MMMM yyyy') : '';
 
   return (
     <div className="space-y-6">
