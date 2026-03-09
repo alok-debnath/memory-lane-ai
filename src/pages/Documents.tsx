@@ -7,7 +7,8 @@ import { FileText, Search, ShieldCheck, Clock, AlertTriangle, FileIcon, Image, R
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { format, isPast, isBefore, addDays } from 'date-fns';
+import { isPast, isBefore, addDays } from 'date-fns';
+import { useTimezone } from '@/hooks/useTimezone';
 import PageInfoButton from '@/components/PageInfoButton';
 
 interface DocExtraction {
@@ -48,6 +49,7 @@ const typeColors: Record<string, string> = {
 const Documents: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { formatTz } = useTimezone();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState('');
@@ -251,7 +253,7 @@ const Documents: React.FC = () => {
                   {doc.key_details?.brand || doc.memory_notes?.title || 'Document'}
                 </p>
                 <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium mt-0.5">
-                  Expires {format(new Date(doc.expiry_date!), 'MMM d, yyyy')}
+                  Expires {formatTz(doc.expiry_date!, 'MMM d, yyyy')}
                 </p>
               </div>
             ))}
@@ -369,7 +371,7 @@ const Documents: React.FC = () => {
                         isPast(new Date(doc.expiry_date)) ? 'text-destructive' : 'text-primary'
                       }`}>
                         <Clock className="w-3 h-3" />
-                        {isPast(new Date(doc.expiry_date)) ? 'Expired' : `Expires ${format(new Date(doc.expiry_date), 'MMM d, yyyy')}`}
+                        {isPast(new Date(doc.expiry_date)) ? 'Expired' : `Expires ${formatTz(doc.expiry_date, 'MMM d, yyyy')}`}
                       </span>
                     )}
                   </div>
@@ -397,7 +399,7 @@ const Documents: React.FC = () => {
                 <div>
                   <h3 className="text-[15px] font-semibold text-foreground capitalize">{selectedDoc.document_type}</h3>
                   <p className="text-[11px] text-muted-foreground">
-                    Added {format(new Date(selectedDoc.created_at), 'MMM d, yyyy')}
+                    Added {formatTz(selectedDoc.created_at, 'MMM d, yyyy')}
                   </p>
                 </div>
               </div>
@@ -426,7 +428,7 @@ const Documents: React.FC = () => {
                   <p className={`text-[15px] font-semibold mt-0.5 ${
                     isPast(new Date(selectedDoc.expiry_date)) ? 'text-destructive' : 'text-foreground'
                   }`}>
-                    {format(new Date(selectedDoc.expiry_date), 'MMMM d, yyyy')}
+                    {formatTz(selectedDoc.expiry_date, 'MMMM d, yyyy')}
                     {isPast(new Date(selectedDoc.expiry_date)) && ' (Expired)'}
                   </p>
                 </div>

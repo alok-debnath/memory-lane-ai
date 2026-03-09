@@ -13,7 +13,8 @@ import PageInfoButton from '@/components/PageInfoButton';
 
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { isAfter, isBefore, addDays, format } from 'date-fns';
+import { isAfter, isBefore, addDays } from 'date-fns';
+import { useTimezone } from '@/hooks/useTimezone';
 import ThemeToggle from '@/components/ThemeToggle';
 import NudgeCards from '@/components/dashboard/NudgeCards';
 import DashboardSummary from '@/components/dashboard/DashboardSummary';
@@ -24,6 +25,7 @@ const categoryEmoji: Record<string, string> = {
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const { formatTz } = useTimezone();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -218,7 +220,7 @@ const Dashboard: React.FC = () => {
               >
                 <p className="text-[13px] font-medium text-foreground truncate">{r.title}</p>
                 <p className="text-[11px] text-primary font-medium mt-0.5">
-                  {format(new Date(r.reminder_date!), 'EEE, MMM d')}
+                  {formatTz(r.reminder_date!, 'EEE, MMM d')}
                 </p>
               </div>
             ))}

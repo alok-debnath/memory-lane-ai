@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { type MemoryNote } from '@/components/MemoryCard';
 import { BarChart3, Flame, Brain, TrendingUp, Heart } from 'lucide-react';
-import { format, subDays, startOfDay, differenceInCalendarDays, eachDayOfInterval } from 'date-fns';
+import { subDays, startOfDay, differenceInCalendarDays, eachDayOfInterval } from 'date-fns';
+import { useTimezone } from '@/hooks/useTimezone';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, PieChart, Pie } from 'recharts';
 import { motion } from 'framer-motion';
 import PageInfoButton from '@/components/PageInfoButton';
@@ -26,6 +27,7 @@ const moodColors: Record<string, string> = {
 };
 
 const Stats: React.FC = () => {
+  const { formatTz } = useTimezone();
   const { data: notes = [], isLoading } = useQuery({
     queryKey: ['memory-notes'],
     queryFn: async () => {
@@ -74,28 +76,28 @@ const Stats: React.FC = () => {
       neutral: 3, nostalgic: 2, anxious: 2, frustrated: 1, sad: 1,
     };
     const moodTrend = trendDays.map((day) => {
-      const dayStr = format(day, 'yyyy-MM-dd');
-      const dayNotes = notes.filter((n) => format(new Date(n.created_at), 'yyyy-MM-dd') === dayStr && n.mood);
+      const dayStr = formatTz(day, 'yyyy-MM-dd');
+      const dayNotes = notes.filter((n) => formatTz(n.created_at, 'yyyy-MM-dd') === dayStr && n.mood);
       const avgMood = dayNotes.length > 0
         ? dayNotes.reduce((sum, n) => sum + (moodValues[n.mood!] || 3), 0) / dayNotes.length
         : 0;
-      return { day: format(day, 'EEE'), value: Math.round(avgMood * 10) / 10, count: dayNotes.length };
+      return { day: formatTz(day, 'EEE'), value: Math.round(avgMood * 10) / 10, count: dayNotes.length };
     });
 
     // Weekly activity
     const weekDays = eachDayOfInterval({ start: subDays(today, 6), end: today });
     const weeklyActivity = weekDays.map((day) => {
-      const dayStr = format(day, 'yyyy-MM-dd');
-      const count = notes.filter((n) => format(new Date(n.created_at), 'yyyy-MM-dd') === dayStr).length;
-      return { day: format(day, 'EEE'), count };
+      const dayStr = formatTz(day, 'yyyy-MM-dd');
+      const count = notes.filter((n) => formatTz(n.created_at, 'yyyy-MM-dd') === dayStr).length;
+      return { day: formatTz(day, 'EEE'), count };
     });
 
     // Streak
     let streak = 0;
     let checkDate = today;
     while (true) {
-      const dayStr = format(checkDate, 'yyyy-MM-dd');
-      const hasNote = notes.some((n) => format(new Date(n.created_at), 'yyyy-MM-dd') === dayStr);
+      const dayStr = formatTz(checkDate, 'yyyy-MM-dd');
+      const hasNote = notes.some((n) => formatTz(n.created_at, 'yyyy-MM-dd') === dayStr);
       if (!hasNote && differenceInCalendarDays(today, checkDate) > 0) break;
       if (hasNote) streak++;
       if (differenceInCalendarDays(today, checkDate) === 0 && !hasNote) break;

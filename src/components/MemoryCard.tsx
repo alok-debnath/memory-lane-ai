@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Bell, Trash2, Tag, Pencil, Paperclip, ChevronRight, Volume2, VolumeX, Lock } from 'lucide-react';
-import { format, isBefore } from 'date-fns';
+import { isBefore } from 'date-fns';
+import { useTimezone } from '@/hooks/useTimezone';
 import { supabase } from '@/integrations/supabase/client';
 import ShareMemory from '@/components/ShareMemory';
 import { useTTS } from '@/hooks/useTTS';
@@ -48,6 +49,7 @@ const moodEmoji: Record<string, string> = {
 const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete, onEdit }) => {
   const [attachmentCount, setAttachmentCount] = useState(0);
   const { speak, stop, speaking } = useTTS();
+  const { formatTz } = useTimezone();
 
   const isLocked = note.capsule_unlock_date && isBefore(new Date(), new Date(note.capsule_unlock_date));
 
@@ -107,7 +109,7 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete, onEdit }
         </div>
         {isLocked ? (
           <p className="text-[13px] text-muted-foreground leading-snug mt-0.5 italic">
-            🔒 Locked until {format(new Date(note.capsule_unlock_date!), 'MMM d, yyyy')}
+            🔒 Locked until {formatTz(note.capsule_unlock_date!, 'MMM d, yyyy')}
           </p>
         ) : (
           <p className="text-[13px] text-muted-foreground leading-snug line-clamp-1 mt-0.5">{note.content}</p>
@@ -135,7 +137,7 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete, onEdit }
           {note.reminder_date && (
             <span className="flex items-center gap-1 text-[11px] text-primary font-medium">
               <Bell className="w-3 h-3" />
-              {format(new Date(note.reminder_date), 'MMM d')}
+              {formatTz(note.reminder_date, 'MMM d')}
             </span>
           )}
           {note.extracted_actions && note.extracted_actions.length > 0 && (
@@ -155,7 +157,7 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete, onEdit }
             </span>
           )}
           <span className="text-[11px] text-muted-foreground/60">
-            {format(new Date(note.created_at), 'MMM d')}
+            {formatTz(note.created_at, 'MMM d')}
           </span>
         </div>
         {note.tags && note.tags.length > 0 && !isLocked && (

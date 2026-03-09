@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Network, X, Tag, Calendar, ChevronRight } from 'lucide-react';
 import PageInfoButton from '@/components/PageInfoButton';
-import { format } from 'date-fns';
+import { useTimezone } from '@/hooks/useTimezone';
 
 interface GraphMemory {
   id: string;
@@ -130,6 +130,7 @@ function buildForceGraph(memories: GraphMemory[]): { nodes: GraphNode[]; edges: 
 
 const KnowledgeGraph: React.FC = () => {
   const { user } = useAuth();
+  const { formatTz } = useTimezone();
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -347,7 +348,7 @@ const KnowledgeGraph: React.FC = () => {
                   </span>
                   <span className="text-[11px] text-muted-foreground flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
-                    {format(new Date(selectedNode.created_at), 'MMM d, yyyy')}
+                    {formatTz(selectedNode.created_at, 'MMM d, yyyy')}
                   </span>
                 </div>
               </div>

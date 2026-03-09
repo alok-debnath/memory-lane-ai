@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { format } from 'date-fns';
+import { useTimezone } from '@/hooks/useTimezone';
 import { ChevronDown, ChevronUp, Sparkles, Heart, Zap, Tag } from 'lucide-react';
 
 interface DiaryEntryCardProps {
@@ -11,6 +11,7 @@ interface DiaryEntryCardProps {
 
 const DiaryEntryCard: React.FC<DiaryEntryCardProps> = ({ entry, index, moodEmoji }) => {
   const [expanded, setExpanded] = useState(false);
+  const { formatTz } = useTimezone();
   const insights = entry.structured_insights || {};
   const keyPoints = insights.key_points || [];
   const habits = entry.habits_detected || [];
@@ -49,7 +50,7 @@ const DiaryEntryCard: React.FC<DiaryEntryCardProps> = ({ entry, index, moodEmoji
           </p>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-[11px] text-muted-foreground">
-              {format(new Date(entry.created_at), 'MMM d, h:mm a')}
+              {formatTz(entry.created_at, 'MMM d, h:mm a')}
             </span>
             {entry.mood && (
               <span className="text-[10px] font-medium text-primary capitalize">{entry.mood}</span>

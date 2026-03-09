@@ -4,7 +4,8 @@ import { Clock, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { format, differenceInCalendarDays } from 'date-fns';
+import { differenceInCalendarDays } from 'date-fns';
+import { useTimezone } from '@/hooks/useTimezone';
 
 const moodEmoji: Record<string, string> = {
   happy: '😊', sad: '😢', anxious: '😰', excited: '🤩', neutral: '😐',
@@ -13,6 +14,7 @@ const moodEmoji: Record<string, string> = {
 
 const DailyFlashback: React.FC = () => {
   const { user } = useAuth();
+  const { formatTz } = useTimezone();
 
   const { data: flashbacks = [] } = useQuery({
     queryKey: ['flashback-memories'],
@@ -58,7 +60,7 @@ const DailyFlashback: React.FC = () => {
               </div>
               <p className="text-[11px] text-muted-foreground line-clamp-2">{fb.content}</p>
               <p className="text-[10px] text-primary font-medium mt-1.5">
-                {format(new Date(fb.created_at), 'MMM d, yyyy')} · {timeLabel}
+                {formatTz(fb.created_at, 'MMM d, yyyy')} · {timeLabel}
               </p>
             </div>
           );

@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Brain, Calendar, Tag, ArrowLeft } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatInTz, getDetectedTimezone } from '@/lib/timezone';
 
 const categoryEmoji: Record<string, string> = {
   personal: '🏠', work: '💼', finance: '💰', health: '❤️', other: '📝',
@@ -78,7 +78,7 @@ const SharedMemory: React.FC = () => {
               <div className="flex items-center gap-3 mt-1">
                 <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                   <Calendar className="w-3 h-3" />
-                  {format(new Date(data.created_at), 'PPP')}
+                  {formatInTz(data.created_at, getDetectedTimezone(), 'PPP')}
                 </span>
                 <span className="flex items-center gap-1 text-[11px] text-muted-foreground capitalize">
                   <Tag className="w-3 h-3" />

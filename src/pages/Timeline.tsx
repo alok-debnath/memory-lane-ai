@@ -6,7 +6,8 @@ import { type MemoryNote } from '@/components/MemoryCard';
 import EditMemoryDialog from '@/components/EditMemoryDialog';
 import { Clock, Bell, Brain, ChevronRight, Search, Sparkles } from 'lucide-react';
 import PageInfoButton from '@/components/PageInfoButton';
-import { format, isToday, isYesterday, isThisWeek, isThisMonth } from 'date-fns';
+import { isToday, isYesterday, isThisWeek, isThisMonth } from 'date-fns';
+import { useTimezone } from '@/hooks/useTimezone';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -20,6 +21,7 @@ const categoryEmoji: Record<string, string> = {
 
 const Timeline: React.FC = () => {
   const { user } = useAuth();
+  const { formatTz } = useTimezone();
   const [editNote, setEditNote] = useState<MemoryNote | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [filter, setFilter] = useState<string | null>(null);
@@ -86,7 +88,7 @@ const Timeline: React.FC = () => {
     else if (isYesterday(d)) label = 'Yesterday';
     else if (isThisWeek(d)) label = 'This Week';
     else if (isThisMonth(d)) label = 'This Month';
-    else label = format(d, 'MMMM yyyy');
+    else label = formatTz(d, 'MMMM yyyy');
     if (!buckets[label]) buckets[label] = [];
     buckets[label].push(note);
   });
@@ -203,13 +205,13 @@ const Timeline: React.FC = () => {
                       {note.reminder_date && (
                         <span className="flex items-center gap-1 mt-1 text-[11px] text-primary font-medium">
                           <Bell className="w-3 h-3" />
-                          {format(new Date(note.reminder_date), 'MMM d')}
+                          {formatTz(note.reminder_date, 'MMM d')}
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-[11px] text-muted-foreground/50">
-                        {format(new Date(note.created_at), 'h:mm a')}
+                        {formatTz(note.created_at, 'h:mm a')}
                       </span>
                       <ChevronRight className="w-4 h-4 text-muted-foreground/30" />
                     </div>

@@ -7,18 +7,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Brain, Bell, LogOut, Calendar, Shield, Trash2,
-  Loader2, Moon, ChevronDown,
+  Loader2, Moon, ChevronDown, Globe,
 } from 'lucide-react';
 import { type MemoryNote } from '@/components/MemoryCard';
 import { useToast } from '@/hooks/use-toast';
 import ThemeToggle from '@/components/ThemeToggle';
 import ExportMemories from '@/components/ExportMemories';
 import PageInfoButton from '@/components/PageInfoButton';
-import { format } from 'date-fns';
+import { useTimezone } from '@/hooks/useTimezone';
+import { getAllTimezones, formatTimezoneLabel } from '@/lib/timezone';
 
 const Profile: React.FC = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, timezone, updateTimezone } = useAuth();
   const { toast } = useToast();
+  const { formatTz } = useTimezone();
   const [changingPassword, setChangingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
@@ -76,7 +78,7 @@ const Profile: React.FC = () => {
     }
   };
 
-  const memberSince = user?.created_at ? format(new Date(user.created_at), 'MMMM yyyy') : '';
+  const memberSince = user?.created_at ? formatTz(user.created_at, 'MMMM yyyy') : '';
 
   return (
     <div className="space-y-6">
@@ -147,6 +149,26 @@ const Profile: React.FC = () => {
               <span className="text-[15px] text-foreground">Appearance</span>
             </div>
             <ThemeToggle />
+          </div>
+
+          {/* Timezone */}
+          <div className="native-group-item justify-between">
+            <div className="flex items-center gap-3">
+              <Globe className="w-[18px] h-[18px] text-muted-foreground" />
+              <span className="text-[15px] text-foreground">Timezone</span>
+            </div>
+            <select
+              value={timezone}
+              onChange={(e) => {
+                updateTimezone(e.target.value);
+                toast({ title: 'Timezone updated', description: e.target.value.replace(/_/g, ' ') });
+              }}
+              className="text-[13px] text-muted-foreground bg-secondary/60 rounded-lg px-2 py-1.5 border-0 outline-none max-w-[180px] truncate"
+            >
+              {getAllTimezones().map(tz => (
+                <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>
+              ))}
+            </select>
           </div>
 
           {/* Change Password */}
