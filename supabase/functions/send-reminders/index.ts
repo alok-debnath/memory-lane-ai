@@ -53,6 +53,12 @@ serve(async (req) => {
       (userReminders[r.user_id] ??= []).push(r);
     }
 
+    // Fetch user timezones
+    const userIds = Object.keys(userReminders);
+    const { data: profiles } = await supabase.from("profiles").select("id, timezone").in("id", userIds);
+    const tzMap: Record<string, string> = {};
+    for (const p of profiles || []) tzMap[p.id] = p.timezone || 'UTC';
+
     let sentCount = 0;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
