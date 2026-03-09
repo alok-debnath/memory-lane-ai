@@ -60,7 +60,7 @@ const DailyFlashback: React.FC = () => {
               </div>
               <p className="text-[11px] text-muted-foreground line-clamp-2">{fb.content}</p>
               <p className="text-[10px] text-primary font-medium mt-1.5">
-                {format(new Date(fb.created_at), 'MMM d, yyyy')} · {timeLabel}
+                {formatTz(fb.created_at, 'MMM d, yyyy')} · {timeLabel}
               </p>
             </div>
           );

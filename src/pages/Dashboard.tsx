@@ -220,7 +220,7 @@ const Dashboard: React.FC = () => {
               >
                 <p className="text-[13px] font-medium text-foreground truncate">{r.title}</p>
                 <p className="text-[11px] text-primary font-medium mt-0.5">
-                  {format(new Date(r.reminder_date!), 'EEE, MMM d')}
+                  {formatTz(r.reminder_date!, 'EEE, MMM d')}
                 </p>
               </div>
             ))}

@@ -347,7 +347,7 @@ const KnowledgeGraph: React.FC = () => {
                   </span>
                   <span className="text-[11px] text-muted-foreground flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
-                    {format(new Date(selectedNode.created_at), 'MMM d, yyyy')}
+                    {formatTz(selectedNode.created_at, 'MMM d, yyyy')}
                   </span>
                 </div>
               </div>

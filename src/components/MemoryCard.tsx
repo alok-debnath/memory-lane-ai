@@ -157,7 +157,7 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ note, index, onDelete, onEdit }
             </span>
           )}
           <span className="text-[11px] text-muted-foreground/60">
-            {format(new Date(note.created_at), 'MMM d')}
+            {formatTz(note.created_at, 'MMM d')}
           </span>
         </div>
         {note.tags && note.tags.length > 0 && !isLocked && (

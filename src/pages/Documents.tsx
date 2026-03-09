@@ -399,7 +399,7 @@ const Documents: React.FC = () => {
                 <div>
                   <h3 className="text-[15px] font-semibold text-foreground capitalize">{selectedDoc.document_type}</h3>
                   <p className="text-[11px] text-muted-foreground">
-                    Added {format(new Date(selectedDoc.created_at), 'MMM d, yyyy')}
+                    Added {formatTz(selectedDoc.created_at, 'MMM d, yyyy')}
                   </p>
                 </div>
               </div>

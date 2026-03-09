@@ -50,7 +50,7 @@ const DiaryEntryCard: React.FC<DiaryEntryCardProps> = ({ entry, index, moodEmoji
           </p>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-[11px] text-muted-foreground">
-              {format(new Date(entry.created_at), 'MMM d, h:mm a')}
+              {formatTz(entry.created_at, 'MMM d, h:mm a')}
             </span>
             {entry.mood && (
               <span className="text-[10px] font-medium text-primary capitalize">{entry.mood}</span>

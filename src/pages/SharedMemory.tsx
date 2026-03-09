@@ -78,7 +78,7 @@ const SharedMemory: React.FC = () => {
               <div className="flex items-center gap-3 mt-1">
                 <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                   <Calendar className="w-3 h-3" />
-                  {format(new Date(data.created_at), 'PPP')}
+                  {formatInTz(data.created_at, getDetectedTimezone(), 'PPP')}
                 </span>
                 <span className="flex items-center gap-1 text-[11px] text-muted-foreground capitalize">
                   <Tag className="w-3 h-3" />
