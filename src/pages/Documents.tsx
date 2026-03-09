@@ -49,6 +49,7 @@ const typeColors: Record<string, string> = {
 const Documents: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { formatTz } = useTimezone();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState('');
