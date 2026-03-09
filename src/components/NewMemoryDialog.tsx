@@ -30,7 +30,7 @@ const NewMemoryDialog: React.FC<NewMemoryDialogProps> = ({ open, onOpenChange })
   const [lastActions, setLastActions] = useState<any[] | null>(null);
   const [conflicts, setConflicts] = useState<any[] | null>(null);
   const [lastSavedMemory, setLastSavedMemory] = useState<{ id: string; title: string } | null>(null);
-  const { user, timezone } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
