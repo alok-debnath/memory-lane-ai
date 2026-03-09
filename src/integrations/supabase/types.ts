@@ -414,13 +414,21 @@ export type Database = {
           capsule_unlock_date: string
           category: string
           content: string
+          context_tags: Json
           created_at: string
           extracted_actions: Json
           id: string
+          importance: string
           is_recurring: boolean
+          life_area: string
+          linked_urls: string[]
+          locations: string[]
           mood: string
+          people: string[]
           recurrence_type: string
           reminder_date: string
+          sentiment_score: number
+          tags: string[]
           title: string
           updated_at: string
           user_id: string
