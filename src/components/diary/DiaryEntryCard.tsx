@@ -11,6 +11,7 @@ interface DiaryEntryCardProps {
 
 const DiaryEntryCard: React.FC<DiaryEntryCardProps> = ({ entry, index, moodEmoji }) => {
   const [expanded, setExpanded] = useState(false);
+  const { formatTz } = useTimezone();
   const insights = entry.structured_insights || {};
   const keyPoints = insights.key_points || [];
   const habits = entry.habits_detected || [];
