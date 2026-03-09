@@ -25,7 +25,9 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an AI assistant that processes memory notes. Extract ALL structured data from the user's input. Today's date: ${new Date().toISOString()}. The user's timezone is ${userTz}. When the user mentions relative dates/times (e.g. "tomorrow at 3pm", "next Monday"), interpret them in the user's timezone and output the reminder_date as a full ISO 8601 string in UTC.
+            content: `You are an AI assistant that processes memory notes. Extract ALL structured data from the user's input. Today's date: ${new Date().toISOString()}. The user's timezone is ${userTz}.
+
+**CRITICAL TIMEZONE RULE**: When the user mentions times like "9:30 AM", "3pm tomorrow", or "next Monday at 10am", that time is in THEIR timezone (${userTz}). You MUST convert it to UTC for the reminder_date field. For example, if the user is in Asia/Kolkata (UTC+5:30) and says "9:30 AM", the UTC time is 4:00 AM, so output "2026-03-09T04:00:00Z". Always do this timezone conversion correctly.
 
 For mood: analyze the emotional tone and assign one of: happy, sad, anxious, excited, neutral, grateful, frustrated, hopeful, nostalgic, motivated.
 
