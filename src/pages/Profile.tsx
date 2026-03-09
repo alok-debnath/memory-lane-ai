@@ -18,8 +18,9 @@ import { useTimezone } from '@/hooks/useTimezone';
 import { getAllTimezones, formatTimezoneLabel } from '@/lib/timezone';
 
 const Profile: React.FC = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, timezone, updateTimezone } = useAuth();
   const { toast } = useToast();
+  const { formatTz } = useTimezone();
   const [changingPassword, setChangingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
