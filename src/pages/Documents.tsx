@@ -7,7 +7,8 @@ import { FileText, Search, ShieldCheck, Clock, AlertTriangle, FileIcon, Image, R
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { format, isPast, isBefore, addDays } from 'date-fns';
+import { isPast, isBefore, addDays } from 'date-fns';
+import { useTimezone } from '@/hooks/useTimezone';
 import PageInfoButton from '@/components/PageInfoButton';
 
 interface DocExtraction {
