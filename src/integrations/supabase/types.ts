@@ -58,6 +58,7 @@ export type Database = {
       }
       diary_entries: {
         Row: {
+          corrected_text: string | null
           created_at: string
           energy_level: string | null
           habits_detected: Json | null
@@ -71,6 +72,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          corrected_text?: string | null
           created_at?: string
           energy_level?: string | null
           habits_detected?: Json | null
@@ -84,6 +86,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          corrected_text?: string | null
           created_at?: string
           energy_level?: string | null
           habits_detected?: Json | null

@@ -1,0 +1,1 @@
+ALTER TABLE public.diary_entries ADD COLUMN IF NOT EXISTS corrected_text text DEFAULT NULL;
