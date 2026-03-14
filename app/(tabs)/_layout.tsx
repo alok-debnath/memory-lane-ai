@@ -5,15 +5,21 @@ import { useTheme } from "tamagui";
 export default function TabLayout() {
   const theme = useTheme();
 
+  // Safe getters for Tamagui token values inside navigation props
+  const primaryColor = theme?.primary?.get() || "#f5a623";
+  const bg = theme?.background?.get() || "#ffffff";
+  const border = theme?.borderColor?.get() || "#e5e5e5";
+  const gray8 = theme?.gray8?.get() || "#888888";
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: theme.primary.get(),
-        tabBarInactiveTintColor: theme.gray8.get(),
+        tabBarActiveTintColor: primaryColor,
+        tabBarInactiveTintColor: gray8,
         tabBarStyle: {
-          backgroundColor: theme.background.get(),
-          borderTopColor: theme.borderColor.get(),
+          backgroundColor: bg,
+          borderTopColor: border,
           elevation: 0,
           shadowOpacity: 0,
         },
@@ -38,10 +44,10 @@ export default function TabLayout() {
         options={{
           title: "Record",
           tabBarIcon: ({ color }) => (
-            <Mic color={theme.background.get()} size={28} />
+            <Mic color={bg} size={28} />
           ),
           tabBarButton: (props) => (
-            <RecordButton {...props} theme={theme} />
+            <RecordButton {...props} primaryColor={primaryColor} />
           ),
         }}
       />
@@ -87,13 +93,13 @@ export default function TabLayout() {
 import { TouchableOpacity, View } from "react-native";
 import { Stack } from "tamagui";
 
-const RecordButton = ({ children, onPress, theme }: any) => (
+const RecordButton = ({ children, onPress, primaryColor }: any) => (
   <TouchableOpacity
     style={{
       top: -15,
       justifyContent: "center",
       alignItems: "center",
-      shadowColor: theme.primary.get(),
+      shadowColor: primaryColor,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.3,
       shadowRadius: 5,
@@ -105,7 +111,7 @@ const RecordButton = ({ children, onPress, theme }: any) => (
       width={60}
       height={60}
       borderRadius={30}
-      backgroundColor={theme.primary.get()}
+      backgroundColor={primaryColor}
       justifyContent="center"
       alignItems="center"
     >

@@ -26,7 +26,7 @@ export function SheetModal({ open, onOpenChange, children, snapPoints = [85, 50,
     >
       <Sheet.Overlay animation="lazy" enterStyle={{ opacity: 0 }} exitStyle={{ opacity: 0 }} />
       <Sheet.Handle />
-      <Sheet.Frame flex={1} padding="$4" space="$4">
+      <Sheet.Frame flex={1} padding="$4" gap="$4">
         {children}
       </Sheet.Frame>
     </Sheet>
