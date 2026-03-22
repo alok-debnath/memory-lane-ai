@@ -22,17 +22,17 @@ const Auth: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Auto-login for demo
+  // Auto-login for demo – let AuthRoute handle redirect after user state updates
   React.useEffect(() => {
     const autoLogin = async () => {
       try {
         await signIn(DEMO_EMAIL, DEMO_PASS);
-        navigate('/');
       } catch {
         setAutoLogging(false);
       }
     };
     autoLogin();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (autoLogging) {
