@@ -8,15 +8,43 @@ import { Label } from '@/components/ui/label';
 import { Brain, Mic, Sparkles, ArrowRight, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+const DEMO_EMAIL = 'alokdebnath.in@gmail.com';
+const DEMO_PASS = '98640123';
+
 const Auth: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [autoLogging, setAutoLogging] = useState(true);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Auto-login for demo
+  React.useEffect(() => {
+    const autoLogin = async () => {
+      try {
+        await signIn(DEMO_EMAIL, DEMO_PASS);
+        navigate('/');
+      } catch {
+        setAutoLogging(false);
+      }
+    };
+    autoLogin();
+  }, []);
+
+  if (autoLogging) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto" />
+          <p className="text-muted-foreground text-sm">Signing in...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
